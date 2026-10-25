@@ -475,7 +475,10 @@ function render(e) {
 let ATRASO = false;
 function estadoAoVivo(e, erro) {
   const v = document.getElementById("vivo"), vt = document.getElementById("vivotxt"), bn = document.getElementById("banner");
-  if (!e && !erro) { v.className = "vivo atencao"; vt.textContent = "aguardando dados"; bn.hidden = true; return; }
+  if (!erro && (!e || !e.atual)) {   // antes da 1ª projeção (ou estado de teste): nada de "interrompida"
+    v.className = "vivo atencao"; vt.textContent = "aguardando os primeiros boletins";
+    document.getElementById("conteudo").textContent = "A projeção começa a aparecer alguns minutos depois do fechamento das urnas, às 17h (horário de Brasília), quando houver boletins suficientes de todas as regiões.";
+    bn.hidden = true; return; }
   const idade = e && e.atualizado ? (Date.now() - new Date(e.atualizado)) / 1000 : null;
   const ens = ensaio(e), dados = e && (e.snapshot ? e.snapshot.dados_ate : e.hora_dados);
   const ha = idade == null ? "" : idade < 60 ? Math.max(0, Math.round(idade)) + " s" : Math.round(idade / 60) + " min";
