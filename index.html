@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apuração ao vivo — projeção do 2º turno</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<style>
+  :root {
+    --bg: #f6f5f1; --card: #ffffff; --ink: #1d1f23; --muted: #6b6f78; --line: #e3e1da;
+    --a: #c8102e; --b: #1f4e9c; --ok: #1a7f4b; --warn: #b7791f;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root { --bg: #121417; --card: #1b1e23; --ink: #eceef2; --muted: #9aa0aa; --line: #2b3038;
+            --a: #ef4b5f; --b: #5b8ff0; --ok: #3fb47a; --warn: #e0a440; }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--ink);
+         font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 40px; }
+  header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
+  .meta { color: var(--muted); font-size: 13px; }
+  .vivo { display: inline-flex; align-items: center; gap: 6px; }
+  .vivo i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); animation: pulso 1.6s infinite; }
+  .vivo.parado i { background: var(--warn); animation: none; }
+  @keyframes pulso { 50% { opacity: .25; } }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(12, 1fr); margin-top: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
+  .s12 { grid-column: span 12; } .s8 { grid-column: span 8; } .s4 { grid-column: span 4; } .s6 { grid-column: span 6; }
+  @media (max-width: 760px) { .s8, .s4, .s6 { grid-column: span 12; } }
+  .status { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
+  .grande { font-size: 44px; font-weight: 700; letter-spacing: -.02em; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
+  .barra { position: relative; height: 34px; border-radius: 8px; overflow: hidden; background: var(--b); margin: 12px 0 6px; }
+  .barra .fa { position: absolute; inset: 0 auto 0 0; background: var(--a); transition: width .6s; }
+  .barra .meio { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; background: var(--ink); opacity: .6; }
+  .barra .ic { position: absolute; top: 0; bottom: 0; background: rgba(255,255,255,.35); transition: all .6s; }
+  .legenda { display: flex; justify-content: space-between; font-weight: 600; font-variant-numeric: tabular-nums; }
+  .legenda .A { color: var(--a); } .legenda .B { color: var(--b); }
+  .frase { margin-top: 10px; color: var(--ink); }
+  .kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .kpi div { border-top: 1px solid var(--line); padding-top: 8px; }
+  .kpi b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
+  .kpi span { color: var(--muted); font-size: 12px; }
+  h2 { font-size: 14px; margin: 0 0 10px; color: var(--muted); font-weight: 600; }
+  .reg { display: grid; grid-template-columns: 100px 1fr 46px; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px; }
+  .reg .t { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .reg .t i { display: block; height: 100%; background: var(--muted); transition: width .6s; }
+  .reg em { font-style: normal; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
+  canvas { width: 100% !important; height: 240px !important; }
+  footer { margin-top: 18px; color: var(--muted); font-size: 12px; }
+  .vazio { color: var(--muted); padding: 40px 0; text-align: center; }
+  .mapa svg { width: 100%; height: auto; display: block; }
+  .mapa path { stroke: var(--card); stroke-width: .6; }
+  .mapa path:hover { stroke: var(--ink); stroke-width: 1.2; }
+  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: right; }
+  th:first-child, td:first-child { text-align: left; }
+  th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--card); }
+  .tabwrap { max-height: 430px; overflow: auto; }
+  .oficial { margin-top: 8px; font-size: 13px; color: var(--muted); }
+  .leg { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); margin-top: 6px; }
+  .leg i { display: inline-block; width: 60px; height: 8px; border-radius: 4px;
+           background: linear-gradient(90deg, var(--b), #ddd, var(--a)); }
+</style>
+</head>
+<body>
+<main>
+  <header>
+    <h1>Projeção do 2º turno — apuração ao vivo</h1>
+    <div class="meta"><span id="vivo" class="vivo parado"><i></i><span id="vivotxt">aguardando dados</span></span></div>
+  </header>
+
+  <div id="conteudo" class="vazio">Aguardando a primeira publicação…</div>
+
+  <div id="painel" hidden>
+    <div class="grid">
+      <section class="card s8">
+        <div class="status" id="status">—</div>
+        <div class="grande" id="prob">—</div>
+        <div class="meta" id="probtxt"></div>
+        <div class="barra"><div class="fa" id="fa"></div><div class="ic" id="ic"></div><div class="meio"></div></div>
+        <div class="legenda"><span class="A" id="la">—</span><span class="B" id="lb">—</span></div>
+        <div class="frase meta" id="frase"></div>
+        <div class="oficial" id="oficialbr"></div>
+      </section>
+      <section class="card s4">
+        <h2>Coleta</h2>
+        <div class="kpi">
+          <div><b id="k1">—</b><span>seções apuradas (TSE)</span></div>
+          <div><b id="k2">—</b><span>seções na amostra do modelo</span></div>
+          <div><b id="k3">—</b><span id="k3l">contagem bruta</span></div>
+          <div><b id="k4">—</b><span>votos que faltam (est.)</span></div>
+        </div>
+        <h2 style="margin-top:16px">Apuração por região</h2>
+        <div id="regioes"></div>
+      </section>
+      <section class="card s12"><h2>Três métodos, hipóteses diferentes (o status acima só sobe quando todos concordam)</h2>
+        <div class="tabwrap" style="max-height:none"><table id="tabm"><thead></thead><tbody></tbody></table></div></section>
+      <section class="card s6"><h2>Probabilidade de vitória ao longo da noite</h2><canvas id="gP"></canvas></section>
+      <section class="card s6"><h2>Projeção do resultado final (faixa de 95%) e contagem bruta</h2><canvas id="gS"></canvas></section>
+      <section class="card s6 mapa"><h2 id="mapat">Contagem oficial por estado</h2><div id="mapa"></div>
+        <div class="leg"><span id="legb">B</span><i></i><span id="lega">A</span><span>· mais transparente = menos apurado</span></div></section>
+      <section class="card s6"><h2>Estados: apuração oficial e projeção do modelo</h2>
+        <div class="tabwrap"><table id="tab"><thead></thead><tbody></tbody></table></div></section>
+    </div>
+    <footer id="aviso"></footer>
+  </div>
+</main>
+<script>
+const FONTE = new URLSearchParams(location.search).get("fonte") || "/api/estado";
+const INTERVALO = 20000;
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const pct = (v, d = 1) => (100 * v).toFixed(d).replace(".", ",") + "%";
+const num = v => Math.round(v).toLocaleString("pt-BR");
+let gP, gS, ultimo = null;
+
+function graficos(e) {
+  const A = e.nomes.a, B = e.nomes.b, s = e.serie || [];
+  const lab = s.map(p => p.hora);
+  const base = { responsive: true, maintainAspectRatio: false, animation: false,
+    plugins: { legend: { labels: { color: css("--muted"), boxWidth: 12 } } },
+    scales: { x: { ticks: { color: css("--muted"), maxTicksLimit: 8 }, grid: { color: css("--line") } },
+              y: { ticks: { color: css("--muted") }, grid: { color: css("--line") } } } };
+  const dP = { labels: lab, datasets: [
+    { label: `A swing: P(${A})`, data: s.map(p => 100 * (p.PA_A ?? p.PA)), borderColor: css("--a"), pointRadius: 0, tension: .2 },
+    { label: `B transferência`, data: s.map(p => p.PA_B == null ? null : 100 * p.PA_B), borderColor: css("--a"), borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, tension: .2 },
+    { label: `C contagem rápida`, data: s.map(p => p.PA_C == null ? null : 100 * p.PA_C), borderColor: css("--a"), borderDash: [2, 3], borderWidth: 1.5, pointRadius: 0, tension: .2 },
+    { label: "50%", data: s.map(() => 50), borderColor: css("--b"), borderWidth: 1, pointRadius: 0 } ] };
+  const dS = { labels: lab, datasets: [
+    { label: "faixa 95%", data: s.map(p => 100 * p.hi), borderWidth: 0, pointRadius: 0, backgroundColor: "rgba(127,127,127,.18)", fill: "+1" },
+    { label: "_", data: s.map(p => 100 * p.lo), borderWidth: 0, pointRadius: 0 },
+    { label: `projeção ${A}`, data: s.map(p => 100 * p.shareA), borderColor: css("--a"), pointRadius: 0, tension: .2 },
+    { label: `contagem bruta ${A}`, data: s.map(p => 100 * p.bruto), borderColor: css("--muted"), borderDash: [4, 4], pointRadius: 0 },
+    { label: "50%", data: s.map(() => 50), borderColor: css("--ink"), borderWidth: 1, pointRadius: 0 } ] };
+  const oP = structuredClone(base); oP.scales.y.min = 0; oP.scales.y.max = 100;
+  const oS = structuredClone(base);
+  oS.plugins.legend.labels.filter = it => it.text !== "_";
+  if (!gP) { gP = new Chart(document.getElementById("gP"), { type: "line", data: dP, options: oP });
+             gS = new Chart(document.getElementById("gS"), { type: "line", data: dS, options: oS }); }
+  else { gP.data = dP; gP.update(); gS.data = dS; gS.update(); }
+}
+
+
+let GEO = null;
+fetch("geo/estados.json").then(r => r.json()).then(g => { GEO = g; if (ULT) estados(ULT); }).catch(() => {});
+let ULT = null;
+function cor(share) {
+  if (share == null) return css("--line");
+  const t = Math.max(-1, Math.min(1, (share - .5) / .15));
+  const A = css("--a"), B = css("--b");
+  const mix = (c, k) => { const n = parseInt(c.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.round(221 + (v - 221) * k)); };
+  const [r, g, b] = mix(t >= 0 ? A : B, Math.abs(t));
+  return `rgb(${r},${g},${b})`;
+}
+function estados(e) {
+  ULT = e;
+  const A = e.nomes.a, B = e.nomes.b, of = (e.oficial && e.oficial.por_uf) || {}, pj = e.projecao_uf || {};
+  document.getElementById("lega").textContent = A; document.getElementById("legb").textContent = B;
+  const br = of.BR;
+  document.getElementById("oficialbr").textContent = br && br.share_a != null
+    ? `Contagem oficial do TSE: ${pct(br.pst / 100)} das seções apuradas · ${A} ${pct(br.share_a, 2)} × ${pct(1 - br.share_a, 2)} ${B}` : "";
+  if (GEO) {
+    const W = 420, H = 400, x0 = -74.2, x1 = -28.6, y0 = 5.6, y1 = -34;
+    const px = ([lo, la]) => [((lo - x0) / (x1 - x0) * W).toFixed(1), ((la - y0) / (y1 - y0) * H).toFixed(1)];
+    const anel = r => "M" + r.map(px).map(p => p.join(",")).join("L") + "Z";
+    const d = g => g.type === "Polygon" ? g.coordinates.map(anel).join("") : g.coordinates.map(p => p.map(anel).join("")).join("");
+    document.getElementById("mapa").innerHTML = `<svg viewBox="0 0 ${W} ${H}">` + GEO.features.map(f => {
+      const u = f.properties.uf, o = of[u] || {}, op = o.pst == null ? .25 : .25 + .75 * Math.min(1, o.pst / 100);
+      const tip = `${f.properties.nome}: ${o.pst != null ? pct(o.pst / 100) + " apurado" : "sem dados"}` +
+        (o.share_a != null ? ` · ${A} ${pct(o.share_a, 1)}` : "") + (pj[u] != null ? ` · projeção ${pct(pj[u], 1)}` : "");
+      return `<path d="${d(f.geometry)}" fill="${cor(o.share_a)}" fill-opacity="${op}"><title>${tip}</title></path>`;
+    }).join("") + "</svg>";
+  }
+  const ufs = Object.keys(Object.assign({}, of, pj)).filter(u => u !== "BR").sort();
+  document.querySelector("#tab thead").innerHTML = `<tr><th>UF</th><th>apurado</th><th>${A} (oficial)</th><th>${A} (projeção)</th></tr>`;
+  document.querySelector("#tab tbody").innerHTML = ufs.map(u => {
+    const o = of[u] || {};
+    return `<tr><td>${u}</td><td>${o.pst != null ? pct(o.pst / 100, 0) : "—"}</td><td>${o.share_a != null ? pct(o.share_a, 1) : "—"}</td><td>${pj[u] != null ? pct(pj[u], 1) : "—"}</td></tr>`;
+  }).join("");
+}
+
+function metodos(e) {
+  const A = e.nomes.a, B = e.nomes.b, ms = e.metodos || [];
+  document.querySelector("#tabm thead").innerHTML = `<tr><th>método</th><th>projeção ${A}</th><th>faixa de 95%</th><th>chance de vitória</th></tr>`;
+  document.querySelector("#tabm tbody").innerHTML = ms.map(m => {
+    const lid = m.PA >= .5 ? A : B, pl = m.PA >= .5 ? m.PA : 1 - m.PA;
+    return `<tr><td>${m.nome}</td><td>${pct(m.shareA, 2)}</td><td>${pct(m.lo, 2)} – ${pct(m.hi, 2)}</td><td>${lid} ${pct(pl)}</td></tr>`;
+  }).join("");
+}
+function render(e) {
+  if (!e || !e.atual) return;
+  document.getElementById("conteudo").hidden = true;
+  document.getElementById("painel").hidden = false;
+  const A = e.nomes.a, B = e.nomes.b, at = e.atual, sA = at.shareA;
+  document.getElementById("status").textContent = e.consenso || at.status;
+  document.getElementById("prob").textContent = pct(at.P_lider);
+  document.getElementById("probtxt").textContent = `chance de vitória de ${at.lider}, segundo o modelo (máximo exibido: 99,5%)`;
+  document.getElementById("fa").style.width = (100 * sA) + "%";
+  const ic = document.getElementById("ic");
+  ic.style.left = (100 * at.ic95[0]) + "%"; ic.style.width = (100 * (at.ic95[1] - at.ic95[0])) + "%";
+  document.getElementById("la").textContent = `${A} ${pct(sA, 2)}`;
+  document.getElementById("lb").textContent = `${pct(1 - sA, 2)} ${B}`;
+  document.getElementById("frase").textContent = at.frase;
+  const c = e.coleta;
+  document.getElementById("k1").textContent = pct(c.pct);
+  document.getElementById("k2").textContent = num(c.amostra_secoes ?? c.secoes_recebidas);
+  document.getElementById("k3").textContent = pct(c.contagem_bruta_A, 2);
+  document.getElementById("k3l").textContent = `contagem bruta da amostra (${A})`;
+  document.getElementById("k4").textContent = num(at.resto_votos);
+  document.getElementById("regioes").innerHTML = Object.entries(c.por_regiao || {})
+    .map(([r, v]) => `<div class="reg"><span>${r}</span><span class="t"><i style="width:${100 * v}%"></i></span><em>${pct(v, 0)}</em></div>`).join("");
+  document.getElementById("aviso").textContent =
+    `${e.aviso || ""} Modo: ${e.modo}. Dados até ${e.hora_dados}. Atualizado em ${new Date(e.atualizado).toLocaleTimeString("pt-BR")}.`;
+  graficos(e);
+  estados(e);
+  metodos(e);
+}
+
+async function ciclo() {
+  const v = document.getElementById("vivo"), vt = document.getElementById("vivotxt");
+  try {
+    const r = await fetch(FONTE + (FONTE.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache: "no-store" });
+    const e = await r.json();
+    if (e && e.atualizado && e.atualizado !== ultimo) { ultimo = e.atualizado; render(e); }
+    const idade = e && e.atualizado ? (Date.now() - new Date(e.atualizado)) / 1000 : 1e9;
+    v.classList.toggle("parado", idade > 600);
+    vt.textContent = idade > 600 ? "sem atualização há mais de 10 min" : "ao vivo";
+  } catch (err) { v.classList.add("parado"); vt.textContent = "sem conexão com o servidor"; }
+}
+ciclo(); setInterval(ciclo, INTERVALO);
+</script>
+</body>
+</html>
