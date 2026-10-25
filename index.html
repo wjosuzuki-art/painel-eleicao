@@ -82,13 +82,22 @@
   .vazio { color: var(--muted); padding: 60px 0; text-align: center; }
   .met td:nth-child(5), .met td:nth-child(6) { text-align: left; color: var(--muted); font-size: 12.5px; }
   .met th:nth-child(5), .met th:nth-child(6) { text-align: left; }
+  .lote { margin-top: 12px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12px; color: var(--muted); }
+  .check { list-style: none; padding: 0; margin: 10px 0 0; font-size: 12.5px; color: var(--muted); }
+  .check li { margin: 2px 0; } .check li b { display: inline-block; width: 16px; }
+  .check li.ok b { color: var(--ok); } .check li.no b { color: var(--muted); }
+  .tag { font-size: 12px; font-weight: 700; color: var(--warn); margin-left: 8px; letter-spacing: .04em; }
+  td.alerta { color: var(--warn); font-weight: 650; }
+  ol.passos { margin: 8px 0 0 18px; padding: 0; color: var(--muted); font-size: 13.5px; } ol.passos li { margin: 4px 0; }
+  ol.passos b { color: var(--ink); }
+  .hist td { font-size: 12.5px; }
 </style>
 </head>
 <body>
 <main>
   <header>
     <div>
-      <h1>Apuração do 2º turno</h1>
+      <h1>Apuração do 2º turno<span class="tag" id="tagens" hidden>· ENSAIO</span></h1>
       <div class="sub">Projeção estatística independente, calculada a partir dos boletins de urna já divulgados pelo TSE.
         <b>Não é resultado oficial</b> — o resultado oficial é publicado pela Justiça Eleitoral.</div>
     </div>
@@ -105,6 +114,7 @@
         <span class="selo of">DADO OFICIAL · TSE</span>
         <h2>Resultado oficial até agora</h2>
         <div id="ofbloco"></div>
+        <div class="lote" id="lote1"></div>
       </section>
       <!-- B. PROJEÇÃO -->
       <section class="card s4">
@@ -114,7 +124,8 @@
         <div class="cand B num"><span id="pb_n">—</span><b id="pb_v">—</b></div>
         <div class="barra"><div class="fa" id="fa"></div><div class="ic" id="ic"></div><div class="meio"></div></div>
         <div class="linha num">Margem projetada: <b id="marg">—</b></div>
-        <div class="linha num"><span class="dica" title="Intervalo do modelo: inclui o erro de prever as seções que faltam e erros compartilhados por município, estado e país (com um piso mínimo). Não inclui falhas de dados nem mudanças de comportamento que nenhuma eleição anterior mostrou. Foi testado em replays de 2022 e 2018.">Intervalo do modelo (95%)</span>: <b id="margic">—</b></div>
+        <div class="linha num"><span class="dica" title="Representa a incerteza calculada pelo modelo dadas as seções já incorporadas: o erro de prever as seções que faltam e erros que podem ser comuns a um município, a um estado ou ao país inteiro (com um piso mínimo). Não contempla necessariamente erros da fonte oficial nem mudanças de comportamento sem precedente nas eleições usadas no teste (2022 e 2018).">Intervalo condicional do modelo (95%)</span>: <b id="margic">—</b></div>
+        <div class="lote" id="lote2"></div>
       </section>
       <!-- C. SITUAÇÃO -->
       <section class="card s4">
@@ -124,14 +135,16 @@
         <div class="linha" id="consmet">—</div>
         <div class="linha num"><span class="dica" title="Probabilidade de vitória segundo o modelo. Acima de 99% aparece como '>99%' para não sugerir uma precisão que nenhum modelo tem.">Confiança do modelo</span>: <b id="conf">—</b></div>
         <div class="linha num" id="primeira"></div>
+        <ul class="check" id="check"></ul>
+        <div class="lote" id="lote3"></div>
       </section>
 
       <!-- indicadores -->
       <section class="card s12">
         <div class="kpis num">
           <div><b id="k_vant">—</b><span>vantagem projetada ao final</span></div>
-          <div><b id="k_resto">—</b><span>votos ainda não contabilizados (estimativa)</span></div>
-          <div><b id="k_virar">—</b><span id="k_virar_l">para a liderança mudar</span></div>
+          <div><b id="k_resto">—</b><span class="dica" title="Estimativa: para cada seção ainda não processada, o modelo usa os votos válidos dela no 1º turno ajustados pelo comparecimento observado nas seções já processadas.">votos estimados ainda pendentes</span></div>
+          <div><b id="k_virar">—</b><span id="k_virar_l">desempenho necessário nos votos restantes</span></div>
           <div><b id="k_cob">—</b><span>seções processadas pelo modelo</span></div>
         </div>
       </section>
@@ -150,7 +163,7 @@
         <div class="leg"><span id="legb">B</span><i id="legi"></i><span id="lega">A</span>
           <span>· cor mais forte = margem maior</span><s style="background:var(--line)"></s><span>sem dados</span></div></section>
       <section class="card s6"><h3>Estados: oficial, projeção e quanto ainda deve mudar</h3>
-        <div class="linha" style="margin:-4px 0 8px">Clique no título de uma coluna para ordenar. Em destaque: estados onde a projeção ainda difere do oficial em mais de 0,1 ponto.</div>
+        <div class="linha" style="margin:-4px 0 8px">Clique no título de uma coluna para ordenar. Em amarelo: estados onde a projeção ainda difere do oficial em mais de 0,25 ponto. "Impacto nacional" = variação esperada no estado × peso do estado nos votos projetados do país: mostra quanto a correção daquele estado mexe no número nacional.</div>
         <div class="tabwrap"><table id="tab"><thead></thead><tbody></tbody></table></div></section>
 
       <section class="card s12">
@@ -158,12 +171,19 @@
           <summary>Qualidade dos dados e detalhes técnicos</summary>
           <div class="grid" style="margin-top:10px">
             <div class="s6"><h3>Apuração oficial por região</h3><div id="regioes"></div></div>
-            <div class="s6"><h3>Execução</h3><div class="tec num" id="tec"></div></div>
+            <div class="s6"><h3>Execução</h3><div class="tec num" id="tec"></div>
+              <h3 style="margin-top:14px">Histórico do status</h3>
+              <table class="hist"><thead><tr><th>dados até</th><th>apuração</th><th>projeção</th><th>menor prob.</th><th>status</th></tr></thead><tbody id="hist"></tbody></table></div>
           </div>
         </details>
         <details>
           <summary>Como a projeção funciona</summary>
-          <p class="linha">Cada seção eleitoral é comparada com ela mesma no 1º turno. Com as seções já divulgadas, o modelo estima
+          <ol class="passos">
+            <li><b>Comparação histórica.</b> Cada seção é comparada com ela mesma no 1º turno.</li>
+            <li><b>Estimativa das seções pendentes.</b> A mudança observada nas seções já divulgadas é aplicada às seções parecidas que ainda faltam.</li>
+            <li><b>Consenso entre métodos.</b> Três abordagens independentes geram projeções e probabilidades; o vencedor só é projetado quando as três concordam e há apuração suficiente no país e em todas as regiões.</li>
+          </ol>
+          <p class="linha"><b>Metodologia detalhada.</b> Cada seção eleitoral é comparada com ela mesma no 1º turno. Com as seções já divulgadas, o modelo estima
             quanto o voto mudou do 1º para o 2º turno e aplica essa mudança às seções que ainda faltam. Três métodos fazem isso
             de formas diferentes (por região/município e ordem de chegada; pelo destino dos votos dos candidatos eliminados;
             e por estimador de razão estratificado). A incerteza é estimada por simulação, com erros que podem ser comuns a um
@@ -186,34 +206,42 @@ const num = v => Math.round(v).toLocaleString("pt-BR");
 const pp = v => (v >= 0 ? "+" : "−") + br(Math.abs(100 * v), 2) + " p.p.";
 const fmtP = p => p >= .99 ? ">99%" : p <= .01 ? "<1%" : (p >= .1 && p <= .9 ? br(100 * p, 0) + "%" : br(100 * p, 1) + "%");
 const votos = v => { const m = Math.abs(v); return m >= 1e6 ? br(m / 1e6, 2) + " milhões" : m >= 1e3 ? num(m / 1e3) + " mil" : num(m); };
-let gP, gM, ultimo = null, ULT = null, GEO = null, ORD = { col: "var", dir: -1 };
+let gP, gM, ultimo = null, ULT = null, GEO = null, ORD = { col: "imp", dir: -1 };
 
 function graficos(e) {
-  const A = e.nomes.a, s = e.serie || [], lab = s.map(p => p.hora);
+  const A = e.nomes.a, B = e.nomes.b, s = e.serie || [], lab = s.map(p => p.hora);
   const base = () => ({ responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
     plugins: { legend: { labels: { color: css("--muted"), boxWidth: 12, filter: it => !it.text.startsWith("_") } },
                tooltip: { filter: it => !it.dataset.label.startsWith("_") } },
     scales: { x: { ticks: { color: css("--muted"), maxTicksLimit: 8 }, grid: { color: css("--line") } },
               y: { ticks: { color: css("--muted") }, grid: { color: css("--line") } } } });
-  const m = v => 100 * (2 * v - 1);
+  const m = v => v == null ? null : 100 * (2 * v - 1);
   const dM = { labels: lab, datasets: [
     { label: "_hi", data: s.map(p => m(p.hi)), borderWidth: 0, pointRadius: 0, backgroundColor: "rgba(127,127,127,.2)", fill: "+1" },
     { label: "_lo", data: s.map(p => m(p.lo)), borderWidth: 0, pointRadius: 0 },
-    { label: `projeção (${A} − outro)`, data: s.map(p => m(p.shareA)), borderColor: css("--a"), pointRadius: 0, tension: .2 },
-    { label: "contagem até o momento", data: s.map(p => m(p.bruto)), borderColor: css("--muted"), borderDash: [4, 4], pointRadius: 0 },
+    { label: `margem projetada (${A} − ${B})`, data: s.map(p => m(p.shareA)), borderColor: css("--a"), pointRadius: 0, tension: .2 },
+    { label: "margem oficial no momento", data: s.map(p => m(p.oficial ?? p.bruto)), borderColor: css("--muted"), borderDash: [4, 4], pointRadius: 0 },
     { label: "_zero", data: s.map(() => 0), borderColor: css("--ink"), borderWidth: 1, pointRadius: 0 } ] };
-  const lin = (v, l) => ({ label: l, data: s.map(() => v), borderColor: css("--line"), borderWidth: 1, borderDash: [2, 3], pointRadius: 0 });
+  const lin = (v, l) => ({ label: l, data: s.map(() => v), borderColor: css("--muted"), borderWidth: 1, borderDash: [2, 4], pointRadius: 0 });
   const dP = { labels: lab, datasets: [
-    { label: "A swing", data: s.map(p => 100 * (p.PA_A ?? p.PA)), borderColor: css("--a"), pointRadius: 0, tension: .2 },
-    { label: "B transferência", data: s.map(p => p.PA_B == null ? null : 100 * p.PA_B), borderColor: css("--a"), borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, tension: .2 },
-    { label: "C razão estratificada", data: s.map(p => p.PA_C == null ? null : 100 * p.PA_C), borderColor: css("--a"), borderDash: [2, 3], borderWidth: 1.5, pointRadius: 0, tension: .2 },
-    lin(99, "_99"), lin(95, "_95"), lin(50, "_50"), lin(5, "_5"), lin(1, "_1") ] };
-  document.getElementById("gPt").textContent = `Chance de vitória de ${A} segundo cada método (linhas: 1%, 5%, 50%, 95%, 99%)`;
-  const oP = base(); oP.scales.y.min = 0; oP.scales.y.max = 100;
+    { label: "Swing + chegada", data: s.map(p => 100 * (p.PA_A ?? p.PA)), borderColor: css("--a"), pointRadius: 1.5, tension: .2 },
+    { label: "Transferência de votos", data: s.map(p => p.PA_B == null ? null : 100 * p.PA_B), borderColor: css("--a"), borderDash: [6, 4], borderWidth: 1.5, pointRadius: 1.5, tension: .2 },
+    { label: "Razão estratificada", data: s.map(p => p.PA_C == null ? null : 100 * p.PA_C), borderColor: css("--a"), borderDash: [2, 3], borderWidth: 1.5, pointRadius: 1.5, tension: .2 },
+    lin(99, "_99"), lin(95, "_95"), lin(5, "_5"), lin(1, "_1") ] };
+  document.getElementById("gPt").textContent = `Probabilidade de vitória de ${A} estimada por método — linhas pontilhadas: limiares de 95% e 99% (e 5%/1%, que equivalem a 95%/99% para ${B})`;
+  const oP = base(); oP.scales.y.ticks.callback = v => v + "%";
+  const vals = dP.datasets.slice(0, 3).flatMap(d => d.data).filter(v => v != null);
+  let faixa = [0, 100];
+  if (vals.length && Math.min(...vals) >= 90) faixa = [90, 100]; else if (vals.length && Math.max(...vals) <= 10) faixa = [0, 10];
+  oP.scales.y.min = faixa[0]; oP.scales.y.max = faixa[1];
+  if (faixa[0] === 90) dP.datasets = dP.datasets.filter(d => !["_5", "_1"].includes(d.label));
+  if (faixa[1] === 10) dP.datasets = dP.datasets.filter(d => !["_95", "_99"].includes(d.label));
+  document.getElementById("gPt").textContent += faixa[1] - faixa[0] < 100 ? ` · eixo exibido de ${faixa[0]}% a ${faixa[1]}% para mostrar as diferenças (atenção: escala ampliada)` : "";
   const oM = base();
+  oM.scales.y.ticks.callback = v => v > 0 ? `${A} +${v}` : v < 0 ? `${B} +${-v}` : "empate";
   if (!gP) { gP = new Chart(document.getElementById("gP"), { type: "line", data: dP, options: oP });
              gM = new Chart(document.getElementById("gM"), { type: "line", data: dM, options: oM }); }
-  else { gP.data = dP; gP.update(); gM.data = dM; gM.update(); }
+  else { gP.data = dP; gP.options = oP; gP.update(); gM.data = dM; gM.options = oM; gM.update(); }
 }
 
 fetch("geo/estados.json").then(r => r.json()).then(g => { GEO = g; if (ULT) estados(ULT); }).catch(() => {});
@@ -224,41 +252,56 @@ function cor(margem) {            // margem = share_A - share_B (−1..1); inten
   const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.round(base + (v - base) * k));
   return `rgb(${r},${g},${b})`;
 }
+function linhasUF(e) {
+  const of = (e.oficial && e.oficial.por_uf) || {}, pj = e.projecao_uf || {}, pv = e.projecao_uf_votos || {};
+  const NV = Object.values(pv).reduce((a, b) => a + b, 0) || 1;
+  const NO = Object.entries(of).filter(([u]) => u !== "BR").reduce((a, [, o]) => a + (o.n || 0), 0) || 1;
+  return Object.keys(Object.assign({}, of, pj)).filter(u => u !== "BR").map(u => {
+    const o = of[u] || {};
+    const v = (pj[u] != null && o.share_a != null) ? pj[u] - o.share_a : null;
+    // impacto nacional: variação esperada no estado × peso do estado no total projetado de votos do país
+    const imp = (v != null && pv[u] != null) ? v * pv[u] / NV : null;
+    return { uf: u, pst: o.pst, of: o.share_a, pj: pj[u], var: v, imp };
+  });
+}
 function estados(e) {
   ULT = e;
   const A = e.nomes.a, B = e.nomes.b, of = (e.oficial && e.oficial.por_uf) || {}, pj = e.projecao_uf || {};
   const temOf = Object.keys(of).some(u => u !== "BR" && of[u].share_a != null);
+  const L = linhasUF(e), porUF = Object.fromEntries(L.map(r => [r.uf, r]));
   document.getElementById("lega").textContent = `${A} +20`; document.getElementById("legb").textContent = `${B} +20`;
   document.getElementById("legi").style.background = `linear-gradient(90deg, ${cor(-.2)}, ${cor(0)}, ${cor(.2)})`;
+  document.getElementById("legi").title = "centro da escala = empate";
   document.getElementById("mapat").textContent = "Candidato à frente por estado — " +
-    (temOf ? "contagem oficial até agora" : "projeção do modelo (contagem oficial ainda não disponível)");
+    (temOf ? "contagem oficial até agora (contorno tracejado: menos de 5% apurado)" : "projeção do modelo (contagem oficial ainda não disponível)");
   if (GEO) {
     const W = 420, H = 400, x0 = -74.2, x1 = -28.6, y0 = 5.6, y1 = -34;
     const px = ([lo, la]) => [((lo - x0) / (x1 - x0) * W).toFixed(1), ((la - y0) / (y1 - y0) * H).toFixed(1)];
     const anel = r => "M" + r.map(px).map(p => p.join(",")).join("L") + "Z";
     const d = g => g.type === "Polygon" ? g.coordinates.map(anel).join("") : g.coordinates.map(p => p.map(anel).join("")).join("");
     document.getElementById("mapa").innerHTML = `<svg viewBox="0 0 ${W} ${H}">` + GEO.features.map(f => {
-      const u = f.properties.uf, o = of[u] || {}, sh = temOf ? o.share_a : pj[u];
+      const u = f.properties.uf, o = of[u] || {}, r = porUF[u] || {}, sh = temOf ? o.share_a : pj[u];
+      const pouco = temOf && (o.pst == null || o.pst < 5);
       const tip = [f.properties.nome.toUpperCase(),
         o.pst != null ? `Apuração oficial: ${br(o.pst, 1)}%` : "Apuração oficial: sem dados",
         o.share_a != null ? `Oficial: ${A} ${pct(o.share_a, 1)} · ${B} ${pct(1 - o.share_a, 1)}` : null,
-        pj[u] != null ? `Projeção final: ${A} ${pct(pj[u], 1)} (margem ${pp(2 * pj[u] - 1)})` : null].filter(Boolean).join("\n");
-      return `<path d="${d(f.geometry)}" fill="${cor(sh == null ? null : 2 * sh - 1)}"><title>${tip}</title></path>`;
+        pj[u] != null ? `Projeção final: ${A} ${pct(pj[u], 1)} (margem ${pp(2 * pj[u] - 1)})` : null,
+        r.var != null ? `Variação esperada: ${pp(r.var)}` : null,
+        r.imp != null ? `Impacto nacional: ${pp(r.imp)}` : null].filter(Boolean).join("\n");
+      return `<path d="${d(f.geometry)}" fill="${cor(sh == null ? null : 2 * sh - 1)}"${pouco ? ' stroke-dasharray="3 2" style="stroke:var(--muted)"' : ""}><title>${tip}</title></path>`;
     }).join("") + "</svg>";
   }
-  const linhas = Object.keys(Object.assign({}, of, pj)).filter(u => u !== "BR").map(u => {
-    const o = of[u] || {};
-    const v = (pj[u] != null && o.share_a != null) ? pj[u] - o.share_a : null;
-    return { uf: u, pst: o.pst, of: o.share_a, pj: pj[u], var: v };
-  });
-  const chave = { uf: r => r.uf, pst: r => r.pst ?? 999, of: r => r.of ?? -1, pj: r => r.pj ?? -1, var: r => Math.abs(r.var ?? -1) };
-  linhas.sort((a, b) => { const x = chave[ORD.col](a), y = chave[ORD.col](b); return (x > y ? 1 : x < y ? -1 : 0) * ORD.dir; });
+  const chave = { uf: r => r.uf, pst: r => r.pst ?? 999, of: r => r.of ?? -1, pj: r => r.pj ?? -1,
+                  var: r => Math.abs(r.var ?? -1), imp: r => Math.abs(r.imp ?? -1) };
+  L.sort((a, b) => { const x = chave[ORD.col](a), y = chave[ORD.col](b); return (x > y ? 1 : x < y ? -1 : 0) * ORD.dir; });
   const th = (c, t) => `<th class="ord" data-c="${c}">${t}${ORD.col === c ? (ORD.dir > 0 ? " ▲" : " ▼") : ""}</th>`;
-  document.querySelector("#tab thead").innerHTML = `<tr>${th("uf", "UF")}${th("pst", "apurado")}${th("of", A + " oficial")}${th("pj", A + " projeção")}${th("var", "variação esperada")}</tr>`;
-  document.querySelector("#tab tbody").innerHTML = linhas.map(r =>
-    `<tr class="${r.var != null && Math.abs(r.var) > .001 && (r.pst ?? 0) < 99.5 ? "dest" : ""}"><td>${r.uf}</td>` +
-    `<td>${r.pst != null ? br(r.pst, 1) + "%" : "—"}</td><td>${r.of != null ? pct(r.of, 2) : "—"}</td>` +
-    `<td>${r.pj != null ? pct(r.pj, 2) : "—"}</td><td>${r.var != null ? (r.var >= 0 ? "+" : "−") + br(Math.abs(100 * r.var), 2) + " p.p." : "—"}</td></tr>`).join("");
+  document.querySelector("#tab thead").innerHTML = `<tr>${th("uf", "UF")}${th("pst", "apurado")}${th("of", A + " oficial")}${th("pj", A + " projeção")}${th("var", "variação esperada")}${th("imp", "impacto nacional")}</tr>`;
+  const fpp = v => v == null ? "—" : (v >= 0 ? "+" : "−") + br(Math.abs(100 * v), 2);
+  document.querySelector("#tab tbody").innerHTML = L.map(r => {
+    const al = r.var != null && Math.abs(r.var) > .0025 && (r.pst ?? 0) < 99.5;
+    return `<tr><td>${r.uf}</td><td>${r.pst != null ? br(r.pst, 1) + "%" : "—"}</td><td>${r.of != null ? pct(r.of, 2) : "—"}</td>` +
+      `<td>${r.pj != null ? pct(r.pj, 2) : "—"}</td><td class="${al ? "alerta" : ""}">${al ? "● " : ""}${fpp(r.var)}${r.var != null ? " p.p." : ""}</td>` +
+      `<td>${fpp(r.imp)}${r.imp != null ? " p.p." : ""}</td></tr>`; }).join("");
   document.querySelectorAll("#tab th.ord").forEach(t => t.onclick = () => {
     const c = t.dataset.c; ORD = { col: c, dir: ORD.col === c ? -ORD.dir : (c === "uf" ? 1 : -1) }; estados(ULT); });
 }
@@ -281,11 +324,16 @@ function metodos(e) {
   }
 }
 
+const ensaio = e => /ensaio/i.test((e && e.modo) || "");
 function render(e) {
   if (!e || !e.atual) return;
   document.getElementById("conteudo").hidden = true;
   document.getElementById("painel").hidden = false;
-  const A = e.nomes.a, B = e.nomes.b, at = e.atual, sA = at.shareA, c = e.coleta || {};
+  const A = e.nomes.a, B = e.nomes.b, at = e.atual, sA = at.shareA, c = e.coleta || {}, sn = e.snapshot || {};
+  const ens = ensaio(e);
+  document.getElementById("tagens").hidden = !ens;
+  const lote = `Lote de dados até ${sn.dados_ate || e.hora_dados}${ens ? " (horário da apuração reproduzida)" : ""} · projeção calculada às ${sn.gerado_em || new Date(e.atualizado).toLocaleTimeString("pt-BR")}`;
+  ["lote1", "lote2", "lote3"].forEach(id => document.getElementById(id).textContent = lote);
   // A. oficial
   const ob = e.oficial && e.oficial.por_uf && e.oficial.por_uf.BR;
   document.getElementById("ofbloco").innerHTML = ob && ob.share_a != null
@@ -301,53 +349,76 @@ function render(e) {
   const ic = document.getElementById("ic");
   ic.style.left = (100 * at.ic95[0]) + "%"; ic.style.width = Math.max(.3, 100 * (at.ic95[1] - at.ic95[0])) + "%";
   document.getElementById("marg").textContent = `${sA >= .5 ? A : B} ${pp(Math.abs(2 * sA - 1))}`;
-  document.getElementById("margic").textContent = `${A} ${pp(2 * at.ic95[0] - 1)} a ${pp(2 * at.ic95[1] - 1)}`;
+  const lo = 2 * at.ic95[0] - 1, hi = 2 * at.ic95[1] - 1, fm = v => v >= 0 ? `${A} +${br(100 * v, 2)}` : `${B} +${br(-100 * v, 2)}`;
+  document.getElementById("margic").textContent = `de ${fm(lo)} a ${fm(hi)} p.p.`;
   // C. situação
   const cons = e.consenso || at.status, el = document.getElementById("situ");
   el.textContent = cons.split(" (")[0];
   el.className = "situ " + (cons.includes(A) && !cons.startsWith("Disputa") ? "A" : cons.includes(B) && !cons.startsWith("Disputa") ? "B" : "N");
-  const ms = e.metodos || [];
-  const nA = ms.filter(m => m.PA >= .5).length, n = ms.length;
+  const ms = e.metodos || [], nA = ms.filter(m => m.PA >= .5).length, n = ms.length;
   document.getElementById("consmet").textContent = n ? (nA === n || nA === 0
     ? `${n} de ${n} métodos com ${nA === n ? A : B} à frente` : `Métodos divergem: ${Math.max(nA, n - nA)} de ${n} com ${nA >= n - nA ? A : B} à frente`) : "";
   document.getElementById("conf").textContent = `${at.lider} ${fmtP(at.P_lider)}`;
   const pr = e.primeira_projecao;
-  document.getElementById("primeira").innerHTML = pr ? `Primeiro vencedor projetado: <b>${pr.lider}</b> às <b>${pr.hora}</b>, com ${br(100 * pr.pct, 1)}% das seções apuradas` : "";
+  document.getElementById("primeira").innerHTML = pr ? `Primeiro vencedor projetado: <b>${pr.lider}</b> com dados até <b>${pr.hora}</b> (${br(100 * pr.pct, 1)}% das seções apuradas)` : "";
+  const tv = e.trava;
+  if (tv) {
+    const pmin = ms.length ? Math.min(...ms.map(m => Math.max(m.PA, 1 - m.PA))) : 0;
+    const itens = [[tv.prob, `3 de 3 métodos acima de 99%, por 3 atualizações seguidas (menor agora: ${fmtP(pmin)})`],
+                   [tv.apuracao, `pelo menos ${br(100 * tv.min_pct, 0)}% das seções apuradas (agora ${br(100 * tv.pct, 1)}%)`],
+                   [tv.regioes, `pelo menos ${br(100 * tv.min_reg, 0)}% apurado em cada região (menor: ${br(100 * tv.reg_min, 1)}%)`],
+                   [!ATRASO, "dados sem atraso"]];
+    document.getElementById("check").innerHTML = `<li style="margin-bottom:4px">Para declarar vencedor projetado:</li>` +
+      itens.map(([ok, t]) => `<li class="${ok ? "ok" : "no"}"><b>${ok ? "✓" : "○"}</b>${t}</li>`).join("");
+  }
   // indicadores
   document.getElementById("k_vant").textContent = `${at.lider} · ${votos(at.margem_votos)} de votos`;
   document.getElementById("k_resto").textContent = votos(at.resto_votos);
   const outro = at.lider === A ? B : A;
-  document.getElementById("k_virar").textContent = at.precisa_pct > 100 ? "mais de 100%" : br(at.precisa_pct, 1) + "%";
-  document.getElementById("k_virar_l").textContent = at.precisa_pct > 100
-    ? `dos votos restantes estimados seriam necessários para ${outro} virar`
-    : `dos votos restantes ${outro} precisaria (o modelo prevê ${br(at.prev_pct, 1)}%)`;
+  if (at.precisa_pct > 100) {
+    document.getElementById("k_virar").textContent = "mais de 100%";
+    document.getElementById("k_virar_l").textContent = `dos votos estimados ainda pendentes seriam necessários para ${outro} virar`;
+  } else {
+    document.getElementById("k_virar").textContent = `${outro}: ${br(at.precisa_pct, 1)}%`;
+    document.getElementById("k_virar_l").textContent = `necessário nos votos restantes para virar · o modelo projeta ${br(at.prev_pct, 1)}% · ` +
+      `${outro} teria de superar a projeção em ${br(Math.abs(at.precisa_pct - at.prev_pct), 1)} ponto(s)`;
+  }
   const tot = c.secoes_total || 0, proc = c.amostra_secoes ?? c.secoes_recebidas;
   document.getElementById("k_cob").textContent = `${num(proc)}${tot ? " (" + pct(proc / tot, 1) + ")" : ""}`;
   // técnico
   document.getElementById("regioes").innerHTML = Object.entries(c.por_regiao || {})
     .map(([r, v]) => `<div class="reg"><span>${r}</span><span class="t"><i style="width:${100 * v}%"></i></span><em>${pct(v, 1)}</em></div>`).join("");
   document.getElementById("tec").innerHTML = [
-    ["Modo", e.modo], ["Dados até", e.hora_dados], ["Projeção gerada em", new Date(e.atualizado).toLocaleTimeString("pt-BR")],
-    ["Seções apuradas (TSE)", pct(c.pct || 0, 1)], ["Seções processadas", num(proc)],
-    ["Votos nas seções processadas", c.votos_contados ? num(c.votos_contados) : "—"]]
+    ["Modo", e.modo], ["Snapshot", sn.id || e.hora_dados], ["Dados até", sn.dados_ate || e.hora_dados],
+    ["Projeção calculada às", sn.gerado_em || new Date(e.atualizado).toLocaleTimeString("pt-BR")],
+    ["Seções apuradas (TSE)", pct(sn.apuracao_tse ?? c.pct ?? 0, 1)], ["Seções processadas pelo modelo", num(proc)],
+    ["Votos nas seções processadas", c.votos_contados ? num(c.votos_contados) : "—"],
+    ["Versão do modelo", sn.versao || "—"], ["Fonte", "boletins de urna divulgados pelo TSE"]]
     .map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join("");
+  document.getElementById("hist").innerHTML = (e.historico || []).slice().reverse()
+    .map(h => `<tr><td>${h.hora}</td><td>${br(100 * h.pct, 1)}%</td><td>${h.shareA != null ? pct(h.shareA, 2) : "—"}</td><td>${h.P != null ? fmtP(h.P) : "—"}</td><td>${h.status}</td></tr>`).join("");
   document.getElementById("aviso").textContent =
-    `${e.aviso || ""} Projeção de ${new Date(e.atualizado).toLocaleTimeString("pt-BR")} com dados até ${e.hora_dados}.`;
+    `${e.aviso || ""} ${lote}. Versão do modelo ${sn.versao || "—"}.`;
   graficos(e); estados(e); metodos(e);
 }
 
+let ATRASO = false;
 function estadoAoVivo(e, erro) {
   const v = document.getElementById("vivo"), vt = document.getElementById("vivotxt"), bn = document.getElementById("banner");
-  const idade = e && e.atualizado ? (Date.now() - new Date(e.atualizado)) / 1000 : null;
-  let cls = "", txt, ban = null;
   if (!e && !erro) { v.className = "vivo atencao"; vt.textContent = "aguardando dados"; bn.hidden = true; return; }
-  if (erro || idade == null) { cls = "critico"; txt = "sem conexão"; ban = ["critico", "SEM CONEXÃO COM O SERVIDOR", "Os números abaixo são da última atualização recebida."]; }
-  else if (idade > 720) { cls = "critico"; txt = "atualização interrompida";
-    ban = ["critico", "ATUALIZAÇÃO INTERROMPIDA", `Última projeção válida: ${new Date(e.atualizado).toLocaleTimeString("pt-BR")}. A projeção está congelada.`]; }
-  else if (idade > 300) { cls = "atencao"; txt = `atraso de ${Math.round(idade / 60)} min`;
-    ban = ["atencao", "DADOS COM ATRASO", `Sem projeção nova há ${Math.round(idade / 60)} minutos. A projeção continua baseada na última coleta válida.`]; }
-  else { txt = `ao vivo · atualizado há ${idade < 60 ? Math.max(0, Math.round(idade)) + " s" : Math.round(idade / 60) + " min"}`; }
-  if (!ban && e && /ensaio/i.test(e.modo || "")) ban = ["ensaio", "ENSAIO", "Estes números são de um teste com dados de eleições passadas — não são da eleição de hoje."];
+  const idade = e && e.atualizado ? (Date.now() - new Date(e.atualizado)) / 1000 : null;
+  const ens = ensaio(e), dados = e && (e.snapshot ? e.snapshot.dados_ate : e.hora_dados);
+  const ha = idade == null ? "" : idade < 60 ? Math.max(0, Math.round(idade)) + " s" : Math.round(idade / 60) + " min";
+  let cls = "", txt, ban = null;
+  ATRASO = false;
+  if (erro || idade == null) { cls = "critico"; txt = "sem conexão"; ATRASO = true;
+    ban = ["critico", "SEM CONEXÃO COM O SERVIDOR", "Os números abaixo são da última atualização recebida."]; }
+  else if (idade > 720) { cls = "critico"; txt = "atualização interrompida"; ATRASO = true;
+    ban = ["critico", "ATUALIZAÇÃO INTERROMPIDA", `Último lote válido: dados até ${dados}, projeção de ${new Date(e.atualizado).toLocaleTimeString("pt-BR")}. A projeção está congelada.`]; }
+  else if (idade > 300) { cls = "atencao"; txt = `dados com atraso · recalculado há ${ha}`; ATRASO = true;
+    ban = ["atencao", "DADOS COM ATRASO", `Sem projeção nova há ${Math.round(idade / 60)} minutos. A projeção continua baseada no lote com dados até ${dados}.`]; }
+  else txt = `${ens ? "REPLAY" : "AO VIVO"} · dados até ${dados} · recalculado há ${ha}`;
+  if (!ban && ens) ban = ["ensaio", "ENSAIO — REPLAY DE ELEIÇÃO PASSADA", "Estes números são de um teste com dados de eleições passadas, reproduzidos em velocidade acelerada. Não são da eleição de hoje."];
   v.className = "vivo " + cls; vt.textContent = txt;
   if (ban) { bn.hidden = false; bn.className = "banner " + ban[0]; bn.innerHTML = `${ban[1]}<span>${ban[2]}</span>`; } else bn.hidden = true;
 }
