@@ -21,9 +21,12 @@ async function cmd(arr) {                       // comando Redis genérico via R
 export default async function handler(req, res) {
   res.setHeader("Cache-Control", "no-store");
   if (!URL_ || !TOK) return res.status(500).json({ erro: "Redis não configurado" });
-  const auth = req.headers.authorization || "";
-  if (!process.env.COLETA_TOKEN || auth !== `Bearer ${process.env.COLETA_TOKEN}`)
-    return res.status(401).json({ erro: "não autorizado" });
+  const esperado = (process.env.COLETA_TOKEN || "").trim();
+  const auth = (req.headers.authorization || "").replace(/^Bearer\s+/i, "").trim();
+  if (!esperado)        // a variável não chegou nesta versão do site: faltou o Redeploy (ou ela está só em Preview)
+    return res.status(401).json({ erro: "COLETA_TOKEN não está configurado NESTE deploy do site (faça Redeploy após criar a variável)" });
+  if (auth !== esperado)
+    return res.status(401).json({ erro: "senha da coleta diferente da configurada no site" });
   try {
     if (req.method === "POST") {
       const b = typeof req.body === "string" ? JSON.parse(req.body) : req.body;
