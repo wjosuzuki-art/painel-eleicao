@@ -26,7 +26,8 @@ export default async function handler(req, res) {
   try {
     if (req.method === "GET") {
       const { result } = await redis(`get/${CHAVE}`);
-      res.setHeader("Cache-Control", "no-store");
+      // cache na CDN da Vercel por 15 s: com 10 ou 10 mil pessoas olhando, o Redis recebe ~4 leituras por minuto
+      res.setHeader("Cache-Control", "public, max-age=0, s-maxage=15, stale-while-revalidate=30");
       return res.status(200).send(result || "{}");
     }
     if (req.method === "POST") {

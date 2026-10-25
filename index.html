@@ -160,6 +160,8 @@ function estados(e) {
   const br = of.BR;
   document.getElementById("oficialbr").textContent = br && br.share_a != null
     ? `Contagem oficial do TSE: ${pct(br.pst / 100)} das seções apuradas · ${A} ${pct(br.share_a, 2)} × ${pct(1 - br.share_a, 2)} ${B}` : "";
+  const temOf = Object.keys(of).some(u => u !== "BR");
+  document.getElementById("mapat").textContent = temOf ? "Contagem oficial por estado" : "Contagem oficial por estado (aguardando dados do TSE)";
   if (GEO) {
     const W = 420, H = 400, x0 = -74.2, x1 = -28.6, y0 = 5.6, y1 = -34;
     const px = ([lo, la]) => [((lo - x0) / (x1 - x0) * W).toFixed(1), ((la - y0) / (y1 - y0) * H).toFixed(1)];
@@ -220,7 +222,7 @@ function render(e) {
 async function ciclo() {
   const v = document.getElementById("vivo"), vt = document.getElementById("vivotxt");
   try {
-    const r = await fetch(FONTE + (FONTE.includes("?") ? "&" : "?") + "t=" + Date.now(), { cache: "no-store" });
+    const r = await fetch(FONTE, { cache: "no-store" });   // sem "?t=": deixa a CDN da Vercel segurar o tráfego
     const e = await r.json();
     if (e && e.atualizado && e.atualizado !== ultimo) { ultimo = e.atualizado; render(e); }
     const idade = e && e.atualizado ? (Date.now() - new Date(e.atualizado)) / 1000 : 1e9;
