@@ -325,9 +325,9 @@ function graficos(e) {
     { label: "_zero", data: s.map(() => 0), borderColor: css("--ink"), borderWidth: 1, pointRadius: 0 } ] };
   const lin = (v, l) => ({ label: l, data: s.map(() => v), borderColor: css("--muted"), borderWidth: 1, borderDash: [2, 4], pointRadius: 0 });
   const dP = { labels: lab, datasets: [
-    { label: "Swing + chegada", data: s.map(p => 100 * (p.PA_A ?? p.PA)), borderColor: css("--a"), pointRadius: 1.5, tension: .2 },
-    { label: "Transferência de votos", data: s.map(p => p.PA_B == null ? null : 100 * p.PA_B), borderColor: css("--a"), borderDash: [6, 4], borderWidth: 1.5, pointRadius: 1.5, tension: .2 },
-    { label: "Razão estratificada", data: s.map(p => p.PA_C == null ? null : 100 * p.PA_C), borderColor: css("--a"), borderDash: [2, 3], borderWidth: 1.5, pointRadius: 1.5, tension: .2 },
+    { label: "Swing + chegada", data: s.map(p => p.prelim ? null : 100 * (p.PA_A ?? p.PA)), borderColor: css("--a"), pointRadius: 1.5, tension: .2 },
+    { label: "Transferência de votos", data: s.map(p => p.PA_B == null || p.prelim ? null : 100 * p.PA_B), borderColor: css("--a"), borderDash: [6, 4], borderWidth: 1.5, pointRadius: 1.5, tension: .2 },
+    { label: "Razão estratificada", data: s.map(p => p.PA_C == null || p.prelim ? null : 100 * p.PA_C), borderColor: css("--a"), borderDash: [2, 3], borderWidth: 1.5, pointRadius: 1.5, tension: .2 },
     lin(99, "_99"), lin(95, "_95"), lin(5, "_5"), lin(1, "_1") ] };
   document.getElementById("gPt").textContent = `Probabilidade de vitória de ${A} estimada por método — linhas pontilhadas: limiares de 95% e 99% (e 5%/1%, que equivalem a 95%/99% para ${B})`;
   const oP = base(); oP.scales.y.ticks.callback = v => v + "%";
@@ -417,7 +417,7 @@ function metodos(e) {
   document.querySelector("#tabm thead").innerHTML = `<tr><th>método</th><th>${A} (projeção)</th><th>intervalo 95%</th><th>confiança</th><th>o que captura</th><th>principal risco</th></tr>`;
   document.querySelector("#tabm tbody").innerHTML = ms.map(m => {
     const lid = m.PA >= .5 ? A : B, pl = m.PA >= .5 ? m.PA : 1 - m.PA, inf = INFO[m.nome] || ["", ""];
-    return `<tr><td>${m.nome}</td><td>${pct(m.shareA, 2)}</td><td>${pct(m.lo, 2)} – ${pct(m.hi, 2)}</td><td>${lid} ${fmtP(pl)}</td><td>${inf[0]}</td><td>${inf[1]}</td></tr>`;
+    return `<tr><td>${m.nome}</td><td>${pct(m.shareA, 2)}</td><td>${pct(m.lo, 2)} – ${pct(m.hi, 2)}</td><td>${e.preliminar ? "—" : lid + " " + fmtP(pl)}</td><td>${inf[0]}</td><td>${inf[1]}</td></tr>`;
   }).join("");
   if (ms.length) {
     const v = ms.map(m => m.shareA), disp = Math.max(...v) - Math.min(...v);
@@ -455,17 +455,17 @@ function render(e) {
   // C. situação
   const cons = e.consenso || at.status, el = document.getElementById("situ");
   el.textContent = cons.split(" (")[0];
-  el.className = "situ " + (cons.includes(A) && !cons.startsWith("Disputa") ? "A" : cons.includes(B) && !cons.startsWith("Disputa") ? "B" : "N");
+  el.className = "situ " + (e.preliminar ? "N" : cons.includes(A) && !cons.startsWith("Disputa") ? "A" : cons.includes(B) && !cons.startsWith("Disputa") ? "B" : "N");
   const ms = e.metodos || [], nA = ms.filter(m => m.PA >= .5).length, n = ms.length;
   document.getElementById("consmet").textContent = n ? (nA === n || nA === 0
     ? `${n} de ${n} métodos com ${nA === n ? A : B} à frente` : `Métodos divergem: ${Math.max(nA, n - nA)} de ${n} com ${nA >= n - nA ? A : B} à frente`) : "";
-  document.getElementById("conf").textContent = `${at.lider} ${fmtP(at.P_lider)}`;
+  document.getElementById("conf").textContent = e.preliminar ? "aguardando mais dados" : `${at.lider} ${fmtP(at.P_lider)}`;
   const pr = e.primeira_projecao;
   document.getElementById("primeira").innerHTML = pr ? `Primeiro vencedor projetado: <b>${pr.lider}</b> com dados até <b>${pr.hora}</b> (${br(100 * pr.pct, 1)}% das seções apuradas)` : "";
   const tv = e.trava;
   if (tv) {
     const pmin = ms.length ? Math.min(...ms.map(m => Math.max(m.PA, 1 - m.PA))) : 0;
-    const itens = [[tv.prob, `3 de 3 métodos acima de 99%, por 3 atualizações seguidas (menor agora: ${fmtP(pmin)})`],
+    const itens = [[tv.prob && !e.preliminar, `3 de 3 métodos acima de 99%, por 3 atualizações seguidas${e.preliminar ? "" : ` (menor agora: ${fmtP(pmin)})`}`],
                    [tv.apuracao, `pelo menos ${br(100 * tv.min_pct, 0)}% das seções apuradas (agora ${br(100 * tv.pct, 1)}%)`],
                    [tv.regioes, `pelo menos ${br(100 * tv.min_reg, 0)}% apurado em cada região (menor: ${br(100 * tv.reg_min, 1)}%)`],
                    [!ATRASO, "dados sem atraso"]];
@@ -523,6 +523,8 @@ function estadoAoVivo(e, erro) {
   else if (idade > 300) { cls = "atencao"; txt = `dados com atraso · recalculado há ${ha}`; ATRASO = true;
     ban = ["atencao", "DADOS COM ATRASO", `Sem projeção nova há ${Math.round(idade / 60)} minutos. A projeção continua baseada no lote com dados até ${dados}.`]; }
   else txt = `${ens ? "REPLAY" : "AO VIVO"} · dados até ${dados} · recalculado há ${ha}`;
+  if (!ban && e && e.preliminar) ban = ["atencao", "DADOS PRELIMINARES",
+    `Projeção calculada com apenas ${br(100 * ((e.snapshot || {}).apuracao_tse || 0), 1)}% das seções apuradas, com incerteza ampliada e sem probabilidade de vitória. As primeiras urnas não representam o país: os números podem mudar bastante nas próximas atualizações.`];
   if (!ban && ens) ban = ["ensaio", "ENSAIO — REPLAY DE ELEIÇÃO PASSADA", "Estes números são de um teste com dados de eleições passadas, reproduzidos em velocidade acelerada. Não são da eleição de hoje."];
   v.className = "vivo " + cls; vt.textContent = txt;
   if (ban) { bn.hidden = false; bn.className = "banner " + ban[0]; bn.innerHTML = `${ban[1]}<span>${ban[2]}</span>`; } else bn.hidden = true;
