@@ -3,7 +3,15 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Apuração do 2º turno — projeção estatística</title>
+<title>Apuração do 2º turno — projeção estatística ao vivo</title>
+<meta name="description" content="Projeção estatística independente do 2º turno, recalculada a cada poucos minutos a partir dos boletins de urna divulgados pelo TSE. Três métodos, incerteza explícita e histórico auditável.">
+<meta property="og:type" content="website">
+<meta property="og:title" content="Apuração do 2º turno — projeção estatística ao vivo">
+<meta property="og:description" content="Quem deve vencer, com que margem e com que confiança — calculado seção a seção a partir dos boletins de urna do TSE.">
+<meta property="og:image" content="og.png">
+<meta property="og:image:width" content="1200"><meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
+<!-- Estatísticas de visita sem cookies (Cloudflare Web Analytics, grátis): cole aqui o <script> que o painel da Cloudflare te der -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
@@ -90,7 +98,26 @@
   td.alerta { color: var(--warn); font-weight: 650; }
   ol.passos { margin: 8px 0 0 18px; padding: 0; color: var(--muted); font-size: 13.5px; } ol.passos li { margin: 4px 0; }
   ol.passos b { color: var(--ink); }
-  .hist td { font-size: 12.5px; }
+  .hist td { font-size: 12.5px; } .hist td:last-child, .hist th:last-child { text-align: left; }
+  .autoria { margin-top: 6px; font-size: 13px; color: var(--muted); display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .autoria a { color: var(--ink); font-weight: 600; text-decoration: none; border-bottom: 1px solid var(--line); }
+  .autoria a:hover { border-color: var(--ink); }
+  button.comp { font: inherit; font-size: 12.5px; color: var(--ink); background: var(--soft); border: 1px solid var(--line);
+                border-radius: 999px; padding: 3px 12px; cursor: pointer; }
+  button.comp:hover { border-color: var(--muted); }
+  .sobre { display: grid; grid-template-columns: 5fr 7fr; gap: 28px; }
+  @media (max-width: 860px) { .sobre { grid-template-columns: 1fr; } }
+  .sobre h2 { margin-top: 0; } .sobre p { color: var(--muted); font-size: 13.5px; margin: 6px 0; }
+  .quem { display: flex; gap: 14px; align-items: flex-start; }
+  .quem .av { flex: none; width: 52px; height: 52px; border-radius: 50%; background: var(--soft); border: 1px solid var(--line);
+              display: grid; place-items: center; font-weight: 700; font-size: 18px; overflow: hidden; }
+  .quem .av img { width: 100%; height: 100%; object-fit: cover; }
+  .quem b { font-size: 16px; } .links { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+  .links a { font-size: 12.5px; color: var(--ink); text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: 3px 11px; }
+  .links a:hover { border-color: var(--muted); }
+  .fatos { list-style: none; padding: 0; margin: 8px 0 0; display: grid; grid-template-columns: 1fr 1fr; gap: 10px 18px; }
+  @media (max-width: 560px) { .fatos { grid-template-columns: 1fr; } }
+  .fatos li { font-size: 13px; color: var(--muted); } .fatos li b { display: block; color: var(--ink); font-size: 14px; }
 </style>
 </head>
 <body>
@@ -100,6 +127,7 @@
       <h1>Apuração do 2º turno<span class="tag" id="tagens" hidden>· ENSAIO</span></h1>
       <div class="sub">Projeção estatística independente, calculada a partir dos boletins de urna já divulgados pelo TSE.
         <b>Não é resultado oficial</b> — o resultado oficial é publicado pela Justiça Eleitoral.</div>
+      <div class="autoria"><span id="byline"></span><button class="comp" id="comp" type="button">Compartilhar</button></div>
     </div>
     <div id="vivo" class="vivo atencao"><i></i><span id="vivotxt">aguardando dados</span></div>
   </header>
@@ -142,7 +170,7 @@
       <!-- indicadores -->
       <section class="card s12">
         <div class="kpis num">
-          <div><b id="k_vant">—</b><span>vantagem projetada ao final</span></div>
+          <div><b id="k_vant">—</b><span>vantagem projetada ao final (votos)</span></div>
           <div><b id="k_resto">—</b><span class="dica" title="Estimativa: para cada seção ainda não processada, o modelo usa os votos válidos dela no 1º turno ajustados pelo comparecimento observado nas seções já processadas.">votos estimados ainda pendentes</span></div>
           <div><b id="k_virar">—</b><span id="k_virar_l">desempenho necessário nos votos restantes</span></div>
           <div><b id="k_cob">—</b><span>seções processadas pelo modelo</span></div>
@@ -152,7 +180,7 @@
       <!-- métodos -->
       <section class="card s12">
         <h2 style="margin-top:0">Três métodos, hipóteses diferentes</h2>
-        <div class="linha" style="margin:-4px 0 10px">O painel só declara <b>vencedor projetado</b> quando os três métodos passam de 99% para o mesmo candidato por três atualizações seguidas. <span id="disp"></span></div>
+        <div class="linha" style="margin:-4px 0 10px">O painel só declara <b>vencedor projetado</b> quando os três métodos passam de 99% para o mesmo candidato por três atualizações seguidas, com pelo menos 15% das seções apuradas no país e 5% em cada região. <span id="disp"></span></div>
         <div class="tabwrap" style="max-height:none"><table class="met" id="tabm"><thead></thead><tbody></tbody></table></div>
       </section>
 
@@ -165,6 +193,26 @@
       <section class="card s6"><h3>Estados: oficial, projeção e quanto ainda deve mudar</h3>
         <div class="linha" style="margin:-4px 0 8px">Clique no título de uma coluna para ordenar. Em amarelo: estados onde a projeção ainda difere do oficial em mais de 0,25 ponto. "Impacto nacional" = variação esperada no estado × peso do estado nos votos projetados do país: mostra quanto a correção daquele estado mexe no número nacional.</div>
         <div class="tabwrap"><table id="tab"><thead></thead><tbody></tbody></table></div></section>
+
+      <!-- SOBRE / AUTORIA -->
+      <section class="card s12" id="sobre"><div class="sobre">
+        <div>
+          <h2>Quem fez</h2>
+          <div class="quem"><div class="av" id="av"></div><div><b id="a_nome"></b><p id="a_bio"></p></div></div>
+          <div class="links" id="a_links"></div>
+          <p style="margin-top:12px">Projeto pessoal e independente, sem vínculo com partidos, campanhas, veículos ou com o TSE. O código e os testes estão abertos para quem quiser conferir.</p>
+        </div>
+        <div>
+          <h2>Bastidores</h2>
+          <p>Uma noite de apuração tem um problema de amostragem embutido: as urnas não chegam em ordem aleatória. Capitais, regiões e perfis de eleitor aparecem em ritmos diferentes, e a contagem parcial engana. Este painel corrige isso seção por seção.</p>
+          <ul class="fatos">
+            <li><b>Coleta própria</b>Três máquinas em redes diferentes baixam os boletins de urna direto do TSE, respeitando os limites de acesso.</li>
+            <li><b>Decodificador do BU</b>O arquivo binário oficial (ASN.1) é lido diretamente; conferido 100% contra os totais publicados pelo TSE no 1º turno.</li>
+            <li><b>Testado no passado</b>Reproduzi as apurações de 2022 e 2018 minuto a minuto: <span id="a_backtest"></span></li>
+            <li><b>Cético por padrão</b>Três métodos com hipóteses diferentes, incerteza por simulação e trava de apuração mínima antes de qualquer anúncio.</li>
+          </ul>
+        </div>
+      </div></section>
 
       <section class="card s12">
         <details>
@@ -195,6 +243,37 @@
   </div>
 </main>
 <script>
+// ======================= PREENCHA AQUI (aparece no topo e no bloco "Quem fez") =======================
+const AUTOR = {
+  nome: "William Suzuki",                    // ex.: "Fulano de Tal"
+  bio: "",                     // 1–2 frases: o que você faz e o que procura. ex.: "Cientista de dados. Gosto de problemas com dados bagunçados e prazo curto."
+  foto: "",                    // opcional: "foto.jpg" (suba junto com o index.html); vazio = iniciais
+  links: {                     // deixe "" no que não quiser mostrar
+    LinkedIn: "", GitHub: "https://github.com/wjosuzuki-art", "E-mail": "wjosuzuki@gmail.com", Site: "",
+  },
+  backtest: "em 2022 a projeção errou o resultado final por menos de 0,1 ponto e nunca apontou o candidato errado; em 2018, com dados mais pobres, os erros foram maiores e a regra de consenso segurou um anúncio que teria sido errado.",
+};
+// ======================================================================================================
+function autoria() {
+  const a = AUTOR, ini = a.nome.split(/\s+/).filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase();
+  document.getElementById("byline").innerHTML = a.nome ? `por <a href="#sobre">${a.nome}</a>` : "";
+  document.getElementById("sobre").hidden = !a.nome;
+  document.getElementById("a_nome").textContent = a.nome;
+  document.getElementById("a_bio").textContent = a.bio;
+  document.getElementById("av").innerHTML = a.foto ? `<img src="${a.foto}" alt="">` : ini;
+  document.getElementById("a_backtest").textContent = a.backtest;
+  document.getElementById("a_links").innerHTML = Object.entries(a.links).filter(([, u]) => u).map(([k, u]) =>
+    `<a href="${k === "E-mail" && !u.startsWith("mailto:") ? "mailto:" + u : u}" target="_blank" rel="noopener">${k}</a>`).join("");
+  if (a.nome) document.querySelector('meta[name="description"]').content += ` Por ${a.nome}.`;
+}
+document.getElementById("comp").onclick = async () => {
+  const url = location.origin + location.pathname, b = document.getElementById("comp");
+  const t = ULT ? `${(ULT.consenso || "").split(" (")[0]} — projeção com ${br(100 * ((ULT.snapshot || {}).apuracao_tse || 0), 1)}% apurado` : document.title;
+  try { if (navigator.share) { await navigator.share({ title: document.title, text: t, url }); return; } } catch (e) { return; }
+  try { await navigator.clipboard.writeText(url); b.textContent = "Link copiado"; setTimeout(() => b.textContent = "Compartilhar", 2000); } catch (e) {}
+};
+autoria();
+
 // na Vercel o estado vem da função /api/estado; no Cloudflare Pages ele é um arquivo estático (estado.json)
 const FONTE = new URLSearchParams(location.search).get("fonte")
   || (location.hostname.endsWith(".pages.dev") ? "estado.json" : "/api/estado");
@@ -372,7 +451,7 @@ function render(e) {
       itens.map(([ok, t]) => `<li class="${ok ? "ok" : "no"}"><b>${ok ? "✓" : "○"}</b>${t}</li>`).join("");
   }
   // indicadores
-  document.getElementById("k_vant").textContent = `${at.lider} · ${votos(at.margem_votos)} de votos`;
+  document.getElementById("k_vant").textContent = `${at.lider} +${votos(at.margem_votos)}`;
   document.getElementById("k_resto").textContent = votos(at.resto_votos);
   const outro = at.lider === A ? B : A;
   if (at.precisa_pct > 100) {
