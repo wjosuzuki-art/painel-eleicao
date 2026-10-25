@@ -123,6 +123,7 @@
   .seg { display: inline-flex; border: 1px solid var(--line); border-radius: 999px; overflow: hidden; }
   .seg button { font: inherit; font-size: 12.5px; color: var(--muted); background: transparent; border: 0; padding: 4px 12px; cursor: pointer; }
   .seg button.on { background: var(--soft); color: var(--ink); font-weight: 600; }
+  #tabcomp th { position: static; } #tabcomp thead tr:first-child th[colspan] { text-align: center; border-bottom: 0; }
   #mm { position: relative; }
   #mm svg { width: 100%; height: auto; max-height: 680px; display: block; }
   #mm path { stroke: var(--card); stroke-width: .35px; vector-effect: non-scaling-stroke; cursor: pointer; }
@@ -206,6 +207,13 @@
       <section class="card s6"><h3>Estados: oficial, projeção e quanto ainda deve mudar</h3>
         <div class="linha" style="margin:-4px 0 8px">Clique no título de uma coluna para ordenar. Em amarelo: estados onde a projeção ainda difere do oficial em mais de 0,25 ponto. "Impacto nacional" = variação esperada no estado × peso do estado nos votos projetados do país: mostra quanto a correção daquele estado mexe no número nacional.</div>
         <div class="tabwrap"><table id="tab"><thead></thead><tbody></tbody></table></div></section>
+
+      <!-- ABSTENÇÃO, BRANCOS E NULOS (mesmas seções nos dois turnos) -->
+      <section class="card s12" id="cardcomp" hidden>
+        <h3>Abstenção, brancos e nulos — mesmas seções nos dois turnos</h3>
+        <div class="linha" style="margin:-4px 0 8px">Compara cada seção que já chegou no 2º turno com ela mesma no 1º. Não é o número final de cada estado: mostra <b>quanto mudou</b> entre os turnos onde já dá para comparar. Brancos e nulos em % do comparecimento.</div>
+        <div class="tabwrap"><table id="tabcomp"><thead></thead><tbody></tbody></table></div>
+      </section>
 
       <!-- MAPA POR MUNICÍPIO (carregado só quando aparece na tela) -->
       <section class="card s12" id="cardmun">
@@ -501,6 +509,7 @@ function render(e) {
   document.getElementById("aviso").textContent =
     `${e.aviso || ""} ${lote}. Versão do modelo ${sn.versao || "—"}.`;
   graficos(e); estados(e); metodos(e);
+  try { comparec(e); } catch (err) { document.getElementById("cardcomp").hidden = true; }
   if (MM.svg) { mmDados(false); mmPintar(); }
 }
 
@@ -607,6 +616,22 @@ function mmTip(ev) {
     if (es.some(e => e.isIntersecting) && ESTADO && ESTADO.atual) { mmCarregar(); io.disconnect(); } }, { rootMargin: "300px" }) : null;
   if (io) io.observe(document.getElementById("cardmun")); else setTimeout(mmCarregar, 3000);
 })();
+
+function comparec(e) {
+  const c = e.comparecimento, card = document.getElementById("cardcomp");
+  if (!c || !Object.keys(c).length) { card.hidden = true; return; }
+  card.hidden = false;
+  const p1 = v => v == null ? "—" : br(100 * v, 1) + "%";
+  const dl = (a, b) => a == null || b == null ? "—" : (b - a >= 0 ? "+" : "−") + br(Math.abs(100 * (b - a)), 1);
+  const cel = (a, b) => `<td>${p1(a)}</td><td>${p1(b)}</td><td><b>${dl(a, b)}</b></td>`;
+  document.querySelector("#tabcomp thead").innerHTML =
+    `<tr><th rowspan="2">UF</th><th rowspan="2">seções</th><th colspan="3" style="text-align:center">abstenção</th><th colspan="3" style="text-align:center">brancos</th><th colspan="3" style="text-align:center">nulos</th></tr>` +
+    `<tr>${"<th>1º t.</th><th>2º t.</th><th>Δ p.p.</th>".repeat(3)}</tr>`;
+  const ord = Object.keys(c).filter(u => u !== "BR").sort((a, b) => (a === "ZZ") - (b === "ZZ") || a.localeCompare(b));
+  const lin = u => { const r = c[u], nm = u === "BR" ? "<b>Brasil</b> <span style='color:var(--muted);font-size:12px'>(sem exterior)</span>" : u === "ZZ" ? "Exterior" : u;
+    return `<tr${u === "BR" ? ' class="dest"' : ""}><td>${nm}</td><td>${num(r.secoes)}</td>${cel(r.abst1, r.abst2)}${cel(r.br1, r.br2)}${cel(r.nu1, r.nu2)}</tr>`; };
+  document.querySelector("#tabcomp tbody").innerHTML = (c.BR ? lin("BR") : "") + ord.map(lin).join("");
+}
 
 let ESTADO = null;
 async function ciclo() {
