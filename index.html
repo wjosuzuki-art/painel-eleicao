@@ -3,237 +3,369 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Apuração ao vivo — projeção do 2º turno</title>
+<title>Apuração do 2º turno — projeção estatística</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
 <style>
   :root {
-    --bg: #f6f5f1; --card: #ffffff; --ink: #1d1f23; --muted: #6b6f78; --line: #e3e1da;
-    --a: #c8102e; --b: #1f4e9c; --ok: #1a7f4b; --warn: #b7791f;
+    --bg: #f6f5f1; --card: #ffffff; --ink: #1d1f23; --muted: #62666f; --line: #e3e1da; --soft: #f1efe9;
+    --a: #c8102e; --b: #1f4e9c; --ok: #1a7f4b; --warn: #a86b12; --bad: #b42318;
   }
   @media (prefers-color-scheme: dark) {
-    :root { --bg: #121417; --card: #1b1e23; --ink: #eceef2; --muted: #9aa0aa; --line: #2b3038;
-            --a: #ef4b5f; --b: #5b8ff0; --ok: #3fb47a; --warn: #e0a440; }
+    :root { --bg: #121417; --card: #1b1e23; --ink: #eceef2; --muted: #a3a9b3; --line: #2b3038; --soft: #22262c;
+            --a: #ef4b5f; --b: #5b8ff0; --ok: #3fb47a; --warn: #e0a440; --bad: #f0645a; }
   }
   * { box-sizing: border-box; }
   body { margin: 0; background: var(--bg); color: var(--ink);
          font: 15px/1.45 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
-  main { max-width: 1080px; margin: 0 auto; padding: 20px 16px 40px; }
-  header { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; flex-wrap: wrap; }
-  h1 { font-size: 20px; margin: 0; letter-spacing: -.01em; }
-  .meta { color: var(--muted); font-size: 13px; }
-  .vivo { display: inline-flex; align-items: center; gap: 6px; }
-  .vivo i { width: 8px; height: 8px; border-radius: 50%; background: var(--ok); animation: pulso 1.6s infinite; }
-  .vivo.parado i { background: var(--warn); animation: none; }
+  main { max-width: 1120px; margin: 0 auto; padding: 20px 16px 40px; }
+  .num { font-variant-numeric: tabular-nums; }
+  header { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; flex-wrap: wrap; }
+  h1 { font-size: 21px; margin: 0; letter-spacing: -.01em; }
+  .sub { color: var(--muted); font-size: 13px; margin-top: 4px; max-width: 640px; }
+  .vivo { display: inline-flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; padding: 6px 10px;
+          border: 1px solid var(--line); border-radius: 999px; background: var(--card); white-space: nowrap; }
+  .vivo i { width: 9px; height: 9px; border-radius: 50%; background: var(--ok); animation: pulso 1.6s infinite; }
+  .vivo.atencao i { background: var(--warn); animation: none; } .vivo.critico i { background: var(--bad); animation: none; }
   @keyframes pulso { 50% { opacity: .25; } }
-  .grid { display: grid; gap: 14px; grid-template-columns: repeat(12, 1fr); margin-top: 16px; }
-  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 16px; }
-  .s12 { grid-column: span 12; } .s8 { grid-column: span 8; } .s4 { grid-column: span 4; } .s6 { grid-column: span 6; }
-  @media (max-width: 760px) { .s8, .s4, .s6 { grid-column: span 12; } }
-  .status { font-size: 13px; font-weight: 600; letter-spacing: .04em; text-transform: uppercase; color: var(--muted); }
-  .grande { font-size: 44px; font-weight: 700; letter-spacing: -.02em; margin: 4px 0 2px; font-variant-numeric: tabular-nums; }
-  .barra { position: relative; height: 34px; border-radius: 8px; overflow: hidden; background: var(--b); margin: 12px 0 6px; }
+  .banner { margin-top: 14px; padding: 12px 16px; border-radius: 10px; font-weight: 600; border: 1px solid; }
+  .banner.atencao { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 10%, transparent); }
+  .banner.critico { color: var(--bad); border-color: var(--bad); background: color-mix(in srgb, var(--bad) 10%, transparent); }
+  .banner.ensaio { color: var(--warn); border-color: var(--warn); background: color-mix(in srgb, var(--warn) 8%, transparent); }
+  .banner span { display: block; font-weight: 400; font-size: 13px; margin-top: 2px; }
+  .grid { display: grid; gap: 14px; grid-template-columns: repeat(12, 1fr); margin-top: 14px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; min-width: 0; }
+  .s12 { grid-column: span 12; } .s4 { grid-column: span 4; } .s6 { grid-column: span 6; }
+  @media (max-width: 860px) { .s4, .s6 { grid-column: span 12; } }
+  .selo { display: inline-block; font-size: 11px; font-weight: 700; letter-spacing: .06em; padding: 3px 8px; border-radius: 6px; }
+  .selo.of { background: var(--soft); color: var(--ink); border: 1px solid var(--line); }
+  .selo.mod { background: transparent; color: var(--muted); border: 1px dashed var(--muted); }
+  h2 { font-size: 14px; margin: 10px 0 12px; font-weight: 650; }
+  h3 { font-size: 13px; margin: 0 0 10px; color: var(--muted); font-weight: 600; }
+  .cand { display: flex; justify-content: space-between; align-items: baseline; margin: 4px 0; }
+  .cand b { font-size: 26px; font-weight: 700; letter-spacing: -.01em; }
+  .cand.A b { color: var(--a); } .cand.B b { color: var(--b); }
+  .barra { position: relative; height: 12px; border-radius: 6px; overflow: hidden; background: var(--b); margin: 10px 0 8px; }
   .barra .fa { position: absolute; inset: 0 auto 0 0; background: var(--a); transition: width .6s; }
-  .barra .meio { position: absolute; left: 50%; top: -4px; bottom: -4px; width: 2px; background: var(--ink); opacity: .6; }
-  .barra .ic { position: absolute; top: 0; bottom: 0; background: rgba(255,255,255,.35); transition: all .6s; }
-  .legenda { display: flex; justify-content: space-between; font-weight: 600; font-variant-numeric: tabular-nums; }
-  .legenda .A { color: var(--a); } .legenda .B { color: var(--b); }
-  .frase { margin-top: 10px; color: var(--ink); }
-  .kpi { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
-  .kpi div { border-top: 1px solid var(--line); padding-top: 8px; }
-  .kpi b { display: block; font-size: 20px; font-variant-numeric: tabular-nums; }
-  .kpi span { color: var(--muted); font-size: 12px; }
-  h2 { font-size: 14px; margin: 0 0 10px; color: var(--muted); font-weight: 600; }
-  .reg { display: grid; grid-template-columns: 100px 1fr 46px; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px; }
-  .reg .t { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
-  .reg .t i { display: block; height: 100%; background: var(--muted); transition: width .6s; }
-  .reg em { font-style: normal; text-align: right; font-variant-numeric: tabular-nums; color: var(--muted); }
-  canvas { width: 100% !important; height: 240px !important; }
-  footer { margin-top: 18px; color: var(--muted); font-size: 12px; }
-  .vazio { color: var(--muted); padding: 40px 0; text-align: center; }
-  .mapa svg { width: 100%; height: auto; display: block; }
-  .mapa path { stroke: var(--card); stroke-width: .6; }
-  .mapa path:hover { stroke: var(--ink); stroke-width: 1.2; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
-  th, td { padding: 5px 6px; border-bottom: 1px solid var(--line); text-align: right; }
+  .barra .meio { position: absolute; left: 50%; top: -3px; bottom: -3px; width: 2px; background: var(--ink); }
+  .barra .ic { position: absolute; top: 0; bottom: 0; background: rgba(255,255,255,.45); transition: all .6s; }
+  .linha { color: var(--muted); font-size: 13px; margin-top: 4px; }
+  .linha b { color: var(--ink); font-weight: 600; }
+  .situ { font-size: 24px; font-weight: 750; line-height: 1.2; margin: 6px 0 8px; }
+  .situ.A { color: var(--a); } .situ.B { color: var(--b); } .situ.N { color: var(--ink); }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; }
+  @media (max-width: 860px) { .kpis { grid-template-columns: 1fr 1fr; } }
+  .kpis div b { display: block; font-size: 20px; font-weight: 700; }
+  .kpis div span { color: var(--muted); font-size: 12.5px; }
+  .dica { border-bottom: 1px dotted var(--muted); cursor: help; }
+  canvas { width: 100% !important; height: 250px !important; }
+  table { width: 100%; border-collapse: collapse; font-size: 13.5px; font-variant-numeric: tabular-nums; }
+  th, td { padding: 6px 8px; border-bottom: 1px solid var(--line); text-align: right; }
   th:first-child, td:first-child { text-align: left; }
   th { color: var(--muted); font-weight: 600; position: sticky; top: 0; background: var(--card); }
-  .tabwrap { max-height: 430px; overflow: auto; }
-  .oficial { margin-top: 8px; font-size: 13px; color: var(--muted); }
-  .leg { display: flex; gap: 10px; align-items: center; font-size: 12px; color: var(--muted); margin-top: 6px; }
-  .leg i { display: inline-block; width: 60px; height: 8px; border-radius: 4px;
-           background: linear-gradient(90deg, var(--b), #ddd, var(--a)); }
+  th.ord { cursor: pointer; user-select: none; } th.ord:hover { color: var(--ink); }
+  tr.dest td { background: var(--soft); }
+  .tabwrap { max-height: 460px; overflow: auto; }
+  .mapa svg { width: 100%; height: auto; display: block; max-height: 460px; }
+  .mapa path { stroke: var(--card); stroke-width: .7; }
+  .mapa path:hover { stroke: var(--ink); stroke-width: 1.4; }
+  .leg { display: flex; gap: 8px; align-items: center; font-size: 12px; color: var(--muted); margin-top: 8px; flex-wrap: wrap; }
+  .leg i { display: inline-block; width: 120px; height: 8px; border-radius: 4px; }
+  .leg s { display: inline-block; width: 12px; height: 8px; border-radius: 2px; text-decoration: none; }
+  details { margin-top: 4px; } summary { cursor: pointer; font-weight: 600; font-size: 14px; }
+  .reg { display: grid; grid-template-columns: 110px 1fr 52px; align-items: center; gap: 8px; margin: 6px 0; font-size: 13px; }
+  .reg .t { height: 8px; background: var(--line); border-radius: 4px; overflow: hidden; }
+  .reg .t i { display: block; height: 100%; background: var(--muted); transition: width .6s; }
+  .reg em { font-style: normal; text-align: right; color: var(--muted); }
+  .tec { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 18px; font-size: 13px; color: var(--muted); }
+  .tec b { color: var(--ink); font-weight: 600; }
+  footer { margin-top: 18px; color: var(--muted); font-size: 12.5px; }
+  .vazio { color: var(--muted); padding: 60px 0; text-align: center; }
+  .met td:nth-child(5), .met td:nth-child(6) { text-align: left; color: var(--muted); font-size: 12.5px; }
+  .met th:nth-child(5), .met th:nth-child(6) { text-align: left; }
 </style>
 </head>
 <body>
 <main>
   <header>
-    <h1>Projeção do 2º turno — apuração ao vivo</h1>
-    <div class="meta"><span id="vivo" class="vivo parado"><i></i><span id="vivotxt">aguardando dados</span></span></div>
+    <div>
+      <h1>Apuração do 2º turno</h1>
+      <div class="sub">Projeção estatística independente, calculada a partir dos boletins de urna já divulgados pelo TSE.
+        <b>Não é resultado oficial</b> — o resultado oficial é publicado pela Justiça Eleitoral.</div>
+    </div>
+    <div id="vivo" class="vivo atencao"><i></i><span id="vivotxt">aguardando dados</span></div>
   </header>
+  <div id="banner" hidden></div>
 
   <div id="conteudo" class="vazio">Aguardando a primeira publicação…</div>
 
   <div id="painel" hidden>
     <div class="grid">
-      <section class="card s8">
-        <div class="status" id="status">—</div>
-        <div class="grande" id="prob">—</div>
-        <div class="meta" id="probtxt"></div>
-        <div class="barra"><div class="fa" id="fa"></div><div class="ic" id="ic"></div><div class="meio"></div></div>
-        <div class="legenda"><span class="A" id="la">—</span><span class="B" id="lb">—</span></div>
-        <div class="frase meta" id="frase"></div>
-        <div class="oficial" id="oficialbr"></div>
-      </section>
+      <!-- A. OFICIAL -->
       <section class="card s4">
-        <h2>Coleta</h2>
-        <div class="kpi">
-          <div><b id="k1">—</b><span>seções apuradas (TSE)</span></div>
-          <div><b id="k2">—</b><span>seções na amostra do modelo</span></div>
-          <div><b id="k3">—</b><span id="k3l">contagem bruta</span></div>
-          <div><b id="k4">—</b><span>votos que faltam (est.)</span></div>
-        </div>
-        <h2 style="margin-top:16px">Apuração por região</h2>
-        <div id="regioes"></div>
+        <span class="selo of">DADO OFICIAL · TSE</span>
+        <h2>Resultado oficial até agora</h2>
+        <div id="ofbloco"></div>
       </section>
-      <section class="card s12"><h2>Três métodos, hipóteses diferentes (o status acima só sobe quando todos concordam)</h2>
-        <div class="tabwrap" style="max-height:none"><table id="tabm"><thead></thead><tbody></tbody></table></div></section>
-      <section class="card s6"><h2>Probabilidade de vitória ao longo da noite</h2><canvas id="gP"></canvas></section>
-      <section class="card s6"><h2>Projeção do resultado final (faixa de 95%) e contagem bruta</h2><canvas id="gS"></canvas></section>
-      <section class="card s6 mapa"><h2 id="mapat">Contagem oficial por estado</h2><div id="mapa"></div>
-        <div class="leg"><span id="legb">B</span><i></i><span id="lega">A</span><span>· mais transparente = menos apurado</span></div></section>
-      <section class="card s6"><h2>Estados: apuração oficial e projeção do modelo</h2>
+      <!-- B. PROJEÇÃO -->
+      <section class="card s4">
+        <span class="selo mod">ESTIMATIVA DO MODELO</span>
+        <h2>Projeção do resultado final</h2>
+        <div class="cand A num"><span id="pa_n">—</span><b id="pa_v">—</b></div>
+        <div class="cand B num"><span id="pb_n">—</span><b id="pb_v">—</b></div>
+        <div class="barra"><div class="fa" id="fa"></div><div class="ic" id="ic"></div><div class="meio"></div></div>
+        <div class="linha num">Margem projetada: <b id="marg">—</b></div>
+        <div class="linha num"><span class="dica" title="Intervalo do modelo: inclui o erro de prever as seções que faltam e erros compartilhados por município, estado e país (com um piso mínimo). Não inclui falhas de dados nem mudanças de comportamento que nenhuma eleição anterior mostrou. Foi testado em replays de 2022 e 2018.">Intervalo do modelo (95%)</span>: <b id="margic">—</b></div>
+      </section>
+      <!-- C. SITUAÇÃO -->
+      <section class="card s4">
+        <span class="selo mod">ESTIMATIVA DO MODELO</span>
+        <h2>Situação</h2>
+        <div class="situ N" id="situ">—</div>
+        <div class="linha" id="consmet">—</div>
+        <div class="linha num"><span class="dica" title="Probabilidade de vitória segundo o modelo. Acima de 99% aparece como '>99%' para não sugerir uma precisão que nenhum modelo tem.">Confiança do modelo</span>: <b id="conf">—</b></div>
+        <div class="linha num" id="primeira"></div>
+      </section>
+
+      <!-- indicadores -->
+      <section class="card s12">
+        <div class="kpis num">
+          <div><b id="k_vant">—</b><span>vantagem projetada ao final</span></div>
+          <div><b id="k_resto">—</b><span>votos ainda não contabilizados (estimativa)</span></div>
+          <div><b id="k_virar">—</b><span id="k_virar_l">para a liderança mudar</span></div>
+          <div><b id="k_cob">—</b><span>seções processadas pelo modelo</span></div>
+        </div>
+      </section>
+
+      <!-- métodos -->
+      <section class="card s12">
+        <h2 style="margin-top:0">Três métodos, hipóteses diferentes</h2>
+        <div class="linha" style="margin:-4px 0 10px">O painel só declara <b>vencedor projetado</b> quando os três métodos passam de 99% para o mesmo candidato por três atualizações seguidas. <span id="disp"></span></div>
+        <div class="tabwrap" style="max-height:none"><table class="met" id="tabm"><thead></thead><tbody></tbody></table></div>
+      </section>
+
+      <section class="card s6"><h3>Margem projetada ao longo da noite (pontos percentuais)</h3><canvas id="gM"></canvas></section>
+      <section class="card s6"><h3 id="gPt">Chance de vitória segundo cada método</h3><canvas id="gP"></canvas></section>
+
+      <section class="card s6 mapa"><h3 id="mapat">Candidato à frente por estado</h3><div id="mapa"></div>
+        <div class="leg"><span id="legb">B</span><i id="legi"></i><span id="lega">A</span>
+          <span>· cor mais forte = margem maior</span><s style="background:var(--line)"></s><span>sem dados</span></div></section>
+      <section class="card s6"><h3>Estados: oficial, projeção e quanto ainda deve mudar</h3>
+        <div class="linha" style="margin:-4px 0 8px">Clique no título de uma coluna para ordenar. Em destaque: estados onde a projeção ainda difere do oficial em mais de 0,1 ponto.</div>
         <div class="tabwrap"><table id="tab"><thead></thead><tbody></tbody></table></div></section>
+
+      <section class="card s12">
+        <details>
+          <summary>Qualidade dos dados e detalhes técnicos</summary>
+          <div class="grid" style="margin-top:10px">
+            <div class="s6"><h3>Apuração oficial por região</h3><div id="regioes"></div></div>
+            <div class="s6"><h3>Execução</h3><div class="tec num" id="tec"></div></div>
+          </div>
+        </details>
+        <details>
+          <summary>Como a projeção funciona</summary>
+          <p class="linha">Cada seção eleitoral é comparada com ela mesma no 1º turno. Com as seções já divulgadas, o modelo estima
+            quanto o voto mudou do 1º para o 2º turno e aplica essa mudança às seções que ainda faltam. Três métodos fazem isso
+            de formas diferentes (por região/município e ordem de chegada; pelo destino dos votos dos candidatos eliminados;
+            e por estimador de razão estratificado). A incerteza é estimada por simulação, com erros que podem ser comuns a um
+            município, a um estado ou ao país inteiro. O método foi testado reproduzindo as apurações de 2022 e 2018.</p>
+        </details>
+      </section>
     </div>
     <footer id="aviso"></footer>
   </div>
 </main>
 <script>
-const FONTE = new URLSearchParams(location.search).get("fonte") || "/api/estado";
-const INTERVALO = 20000;
+// na Vercel o estado vem da função /api/estado; no Cloudflare Pages ele é um arquivo estático (estado.json)
+const FONTE = new URLSearchParams(location.search).get("fonte")
+  || (location.hostname.endsWith(".pages.dev") ? "estado.json" : "/api/estado");
+const INTERVALO = 45000;   // o modelo atualiza a cada ~2 min; 45 s poupa a cota de requisições
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const pct = (v, d = 1) => (100 * v).toFixed(d).replace(".", ",") + "%";
+const br = (v, d) => v.toFixed(d).replace(".", ",");
+const pct = (v, d = 1) => br(100 * v, d) + "%";
 const num = v => Math.round(v).toLocaleString("pt-BR");
-let gP, gS, ultimo = null;
+const pp = v => (v >= 0 ? "+" : "−") + br(Math.abs(100 * v), 2) + " p.p.";
+const fmtP = p => p >= .99 ? ">99%" : p <= .01 ? "<1%" : (p >= .1 && p <= .9 ? br(100 * p, 0) + "%" : br(100 * p, 1) + "%");
+const votos = v => { const m = Math.abs(v); return m >= 1e6 ? br(m / 1e6, 2) + " milhões" : m >= 1e3 ? num(m / 1e3) + " mil" : num(m); };
+let gP, gM, ultimo = null, ULT = null, GEO = null, ORD = { col: "var", dir: -1 };
 
 function graficos(e) {
-  const A = e.nomes.a, B = e.nomes.b, s = e.serie || [];
-  const lab = s.map(p => p.hora);
-  const base = { responsive: true, maintainAspectRatio: false, animation: false,
-    plugins: { legend: { labels: { color: css("--muted"), boxWidth: 12 } } },
+  const A = e.nomes.a, s = e.serie || [], lab = s.map(p => p.hora);
+  const base = () => ({ responsive: true, maintainAspectRatio: false, animation: false, interaction: { mode: "index", intersect: false },
+    plugins: { legend: { labels: { color: css("--muted"), boxWidth: 12, filter: it => !it.text.startsWith("_") } },
+               tooltip: { filter: it => !it.dataset.label.startsWith("_") } },
     scales: { x: { ticks: { color: css("--muted"), maxTicksLimit: 8 }, grid: { color: css("--line") } },
-              y: { ticks: { color: css("--muted") }, grid: { color: css("--line") } } } };
+              y: { ticks: { color: css("--muted") }, grid: { color: css("--line") } } } });
+  const m = v => 100 * (2 * v - 1);
+  const dM = { labels: lab, datasets: [
+    { label: "_hi", data: s.map(p => m(p.hi)), borderWidth: 0, pointRadius: 0, backgroundColor: "rgba(127,127,127,.2)", fill: "+1" },
+    { label: "_lo", data: s.map(p => m(p.lo)), borderWidth: 0, pointRadius: 0 },
+    { label: `projeção (${A} − outro)`, data: s.map(p => m(p.shareA)), borderColor: css("--a"), pointRadius: 0, tension: .2 },
+    { label: "contagem até o momento", data: s.map(p => m(p.bruto)), borderColor: css("--muted"), borderDash: [4, 4], pointRadius: 0 },
+    { label: "_zero", data: s.map(() => 0), borderColor: css("--ink"), borderWidth: 1, pointRadius: 0 } ] };
+  const lin = (v, l) => ({ label: l, data: s.map(() => v), borderColor: css("--line"), borderWidth: 1, borderDash: [2, 3], pointRadius: 0 });
   const dP = { labels: lab, datasets: [
-    { label: `A swing: P(${A})`, data: s.map(p => 100 * (p.PA_A ?? p.PA)), borderColor: css("--a"), pointRadius: 0, tension: .2 },
-    { label: `B transferência`, data: s.map(p => p.PA_B == null ? null : 100 * p.PA_B), borderColor: css("--a"), borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, tension: .2 },
-    { label: `C contagem rápida`, data: s.map(p => p.PA_C == null ? null : 100 * p.PA_C), borderColor: css("--a"), borderDash: [2, 3], borderWidth: 1.5, pointRadius: 0, tension: .2 },
-    { label: "50%", data: s.map(() => 50), borderColor: css("--b"), borderWidth: 1, pointRadius: 0 } ] };
-  const dS = { labels: lab, datasets: [
-    { label: "faixa 95%", data: s.map(p => 100 * p.hi), borderWidth: 0, pointRadius: 0, backgroundColor: "rgba(127,127,127,.18)", fill: "+1" },
-    { label: "_", data: s.map(p => 100 * p.lo), borderWidth: 0, pointRadius: 0 },
-    { label: `projeção ${A}`, data: s.map(p => 100 * p.shareA), borderColor: css("--a"), pointRadius: 0, tension: .2 },
-    { label: `contagem bruta ${A}`, data: s.map(p => 100 * p.bruto), borderColor: css("--muted"), borderDash: [4, 4], pointRadius: 0 },
-    { label: "50%", data: s.map(() => 50), borderColor: css("--ink"), borderWidth: 1, pointRadius: 0 } ] };
-  const oP = structuredClone(base); oP.scales.y.min = 0; oP.scales.y.max = 100;
-  const oS = structuredClone(base);
-  oS.plugins.legend.labels.filter = it => it.text !== "_";
+    { label: "A swing", data: s.map(p => 100 * (p.PA_A ?? p.PA)), borderColor: css("--a"), pointRadius: 0, tension: .2 },
+    { label: "B transferência", data: s.map(p => p.PA_B == null ? null : 100 * p.PA_B), borderColor: css("--a"), borderDash: [6, 4], borderWidth: 1.5, pointRadius: 0, tension: .2 },
+    { label: "C razão estratificada", data: s.map(p => p.PA_C == null ? null : 100 * p.PA_C), borderColor: css("--a"), borderDash: [2, 3], borderWidth: 1.5, pointRadius: 0, tension: .2 },
+    lin(99, "_99"), lin(95, "_95"), lin(50, "_50"), lin(5, "_5"), lin(1, "_1") ] };
+  document.getElementById("gPt").textContent = `Chance de vitória de ${A} segundo cada método (linhas: 1%, 5%, 50%, 95%, 99%)`;
+  const oP = base(); oP.scales.y.min = 0; oP.scales.y.max = 100;
+  const oM = base();
   if (!gP) { gP = new Chart(document.getElementById("gP"), { type: "line", data: dP, options: oP });
-             gS = new Chart(document.getElementById("gS"), { type: "line", data: dS, options: oS }); }
-  else { gP.data = dP; gP.update(); gS.data = dS; gS.update(); }
+             gM = new Chart(document.getElementById("gM"), { type: "line", data: dM, options: oM }); }
+  else { gP.data = dP; gP.update(); gM.data = dM; gM.update(); }
 }
 
-
-let GEO = null;
 fetch("geo/estados.json").then(r => r.json()).then(g => { GEO = g; if (ULT) estados(ULT); }).catch(() => {});
-let ULT = null;
-function cor(share) {
-  if (share == null) return css("--line");
-  const t = Math.max(-1, Math.min(1, (share - .5) / .15));
-  const A = css("--a"), B = css("--b");
-  const mix = (c, k) => { const n = parseInt(c.slice(1), 16); return [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.round(221 + (v - 221) * k)); };
-  const [r, g, b] = mix(t >= 0 ? A : B, Math.abs(t));
+function cor(margem) {            // margem = share_A - share_B (−1..1); intensidade satura em 20 pontos
+  if (margem == null || isNaN(margem)) return css("--line");
+  const t = Math.max(-1, Math.min(1, margem / .20)), k = .25 + .75 * Math.abs(t);
+  const c = t >= 0 ? css("--a") : css("--b"), n = parseInt(c.slice(1), 16), base = 225;
+  const [r, g, b] = [(n >> 16) & 255, (n >> 8) & 255, n & 255].map(v => Math.round(base + (v - base) * k));
   return `rgb(${r},${g},${b})`;
 }
 function estados(e) {
   ULT = e;
   const A = e.nomes.a, B = e.nomes.b, of = (e.oficial && e.oficial.por_uf) || {}, pj = e.projecao_uf || {};
-  document.getElementById("lega").textContent = A; document.getElementById("legb").textContent = B;
-  const br = of.BR;
-  document.getElementById("oficialbr").textContent = br && br.share_a != null
-    ? `Contagem oficial do TSE${e.oficial.simulado ? " (simulada no ensaio)" : ""}: ${pct(br.pst / 100)} das seções apuradas · ${A} ${pct(br.share_a, 2)} × ${pct(1 - br.share_a, 2)} ${B}` : "";
-  const temOf = Object.keys(of).some(u => u !== "BR");
-  document.getElementById("mapat").textContent = temOf ? "Contagem oficial por estado"
-    : "Projeção do modelo por estado (contagem oficial do TSE ainda não disponível)";
+  const temOf = Object.keys(of).some(u => u !== "BR" && of[u].share_a != null);
+  document.getElementById("lega").textContent = `${A} +20`; document.getElementById("legb").textContent = `${B} +20`;
+  document.getElementById("legi").style.background = `linear-gradient(90deg, ${cor(-.2)}, ${cor(0)}, ${cor(.2)})`;
+  document.getElementById("mapat").textContent = "Candidato à frente por estado — " +
+    (temOf ? "contagem oficial até agora" : "projeção do modelo (contagem oficial ainda não disponível)");
   if (GEO) {
     const W = 420, H = 400, x0 = -74.2, x1 = -28.6, y0 = 5.6, y1 = -34;
     const px = ([lo, la]) => [((lo - x0) / (x1 - x0) * W).toFixed(1), ((la - y0) / (y1 - y0) * H).toFixed(1)];
     const anel = r => "M" + r.map(px).map(p => p.join(",")).join("L") + "Z";
     const d = g => g.type === "Polygon" ? g.coordinates.map(anel).join("") : g.coordinates.map(p => p.map(anel).join("")).join("");
     document.getElementById("mapa").innerHTML = `<svg viewBox="0 0 ${W} ${H}">` + GEO.features.map(f => {
-      const u = f.properties.uf, o = of[u] || {},
-            op = temOf ? (o.pst == null ? .25 : .25 + .75 * Math.min(1, o.pst / 100)) : .6,
-            cshare = temOf ? o.share_a : pj[u];
-      const tip = `${f.properties.nome}: ${o.pst != null ? pct(o.pst / 100) + " apurado" : "sem dados"}` +
-        (o.share_a != null ? ` · ${A} ${pct(o.share_a, 1)}` : "") + (pj[u] != null ? ` · projeção ${pct(pj[u], 1)}` : "");
-      return `<path d="${d(f.geometry)}" fill="${cor(cshare)}" fill-opacity="${op}"><title>${tip}</title></path>`;
+      const u = f.properties.uf, o = of[u] || {}, sh = temOf ? o.share_a : pj[u];
+      const tip = [f.properties.nome.toUpperCase(),
+        o.pst != null ? `Apuração oficial: ${br(o.pst, 1)}%` : "Apuração oficial: sem dados",
+        o.share_a != null ? `Oficial: ${A} ${pct(o.share_a, 1)} · ${B} ${pct(1 - o.share_a, 1)}` : null,
+        pj[u] != null ? `Projeção final: ${A} ${pct(pj[u], 1)} (margem ${pp(2 * pj[u] - 1)})` : null].filter(Boolean).join("\n");
+      return `<path d="${d(f.geometry)}" fill="${cor(sh == null ? null : 2 * sh - 1)}"><title>${tip}</title></path>`;
     }).join("") + "</svg>";
   }
-  const ufs = Object.keys(Object.assign({}, of, pj)).filter(u => u !== "BR").sort();
-  document.querySelector("#tab thead").innerHTML = `<tr><th>UF</th><th>apurado</th><th>${A} (oficial)</th><th>${A} (projeção)</th></tr>`;
-  document.querySelector("#tab tbody").innerHTML = ufs.map(u => {
+  const linhas = Object.keys(Object.assign({}, of, pj)).filter(u => u !== "BR").map(u => {
     const o = of[u] || {};
-    return `<tr><td>${u}</td><td>${o.pst != null ? pct(o.pst / 100, 0) : "—"}</td><td>${o.share_a != null ? pct(o.share_a, 1) : "—"}</td><td>${pj[u] != null ? pct(pj[u], 1) : "—"}</td></tr>`;
-  }).join("");
+    const v = (pj[u] != null && o.share_a != null) ? pj[u] - o.share_a : null;
+    return { uf: u, pst: o.pst, of: o.share_a, pj: pj[u], var: v };
+  });
+  const chave = { uf: r => r.uf, pst: r => r.pst ?? 999, of: r => r.of ?? -1, pj: r => r.pj ?? -1, var: r => Math.abs(r.var ?? -1) };
+  linhas.sort((a, b) => { const x = chave[ORD.col](a), y = chave[ORD.col](b); return (x > y ? 1 : x < y ? -1 : 0) * ORD.dir; });
+  const th = (c, t) => `<th class="ord" data-c="${c}">${t}${ORD.col === c ? (ORD.dir > 0 ? " ▲" : " ▼") : ""}</th>`;
+  document.querySelector("#tab thead").innerHTML = `<tr>${th("uf", "UF")}${th("pst", "apurado")}${th("of", A + " oficial")}${th("pj", A + " projeção")}${th("var", "variação esperada")}</tr>`;
+  document.querySelector("#tab tbody").innerHTML = linhas.map(r =>
+    `<tr class="${r.var != null && Math.abs(r.var) > .001 && (r.pst ?? 0) < 99.5 ? "dest" : ""}"><td>${r.uf}</td>` +
+    `<td>${r.pst != null ? br(r.pst, 1) + "%" : "—"}</td><td>${r.of != null ? pct(r.of, 2) : "—"}</td>` +
+    `<td>${r.pj != null ? pct(r.pj, 2) : "—"}</td><td>${r.var != null ? (r.var >= 0 ? "+" : "−") + br(Math.abs(100 * r.var), 2) + " p.p." : "—"}</td></tr>`).join("");
+  document.querySelectorAll("#tab th.ord").forEach(t => t.onclick = () => {
+    const c = t.dataset.c; ORD = { col: c, dir: ORD.col === c ? -ORD.dir : (c === "uf" ? 1 : -1) }; estados(ULT); });
 }
 
+const INFO = {
+  "Swing + chegada": ["quanto cada região, estado e município mudou desde o 1º turno, corrigido pela ordem de chegada", "supõe que as seções que faltam mudam como as vizinhas"],
+  "Transferência de votos": ["para onde foram os votos dos candidatos eliminados no 1º turno", "o padrão de transferência pode variar entre lugares"],
+  "Razão estratificada (estilo contagem rápida)": ["a razão entre 2º e 1º turno dentro de estratos (estado × perfil de voto)", "sensível a estratos com poucas seções"],
+};
 function metodos(e) {
   const A = e.nomes.a, B = e.nomes.b, ms = e.metodos || [];
-  document.querySelector("#tabm thead").innerHTML = `<tr><th>método</th><th>projeção ${A}</th><th>faixa de 95%</th><th>chance de vitória</th></tr>`;
+  document.querySelector("#tabm thead").innerHTML = `<tr><th>método</th><th>${A} (projeção)</th><th>intervalo 95%</th><th>confiança</th><th>o que captura</th><th>principal risco</th></tr>`;
   document.querySelector("#tabm tbody").innerHTML = ms.map(m => {
-    const lid = m.PA >= .5 ? A : B, pl = m.PA >= .5 ? m.PA : 1 - m.PA;
-    return `<tr><td>${m.nome}</td><td>${pct(m.shareA, 2)}</td><td>${pct(m.lo, 2)} – ${pct(m.hi, 2)}</td><td>${lid} ${pct(pl)}</td></tr>`;
+    const lid = m.PA >= .5 ? A : B, pl = m.PA >= .5 ? m.PA : 1 - m.PA, inf = INFO[m.nome] || ["", ""];
+    return `<tr><td>${m.nome}</td><td>${pct(m.shareA, 2)}</td><td>${pct(m.lo, 2)} – ${pct(m.hi, 2)}</td><td>${lid} ${fmtP(pl)}</td><td>${inf[0]}</td><td>${inf[1]}</td></tr>`;
   }).join("");
+  if (ms.length) {
+    const v = ms.map(m => m.shareA), disp = Math.max(...v) - Math.min(...v);
+    document.getElementById("disp").textContent = `Diferença entre o maior e o menor método: ${br(100 * disp, 2)} ponto(s).`;
+  }
 }
+
 function render(e) {
   if (!e || !e.atual) return;
   document.getElementById("conteudo").hidden = true;
   document.getElementById("painel").hidden = false;
-  const A = e.nomes.a, B = e.nomes.b, at = e.atual, sA = at.shareA;
-  document.getElementById("status").textContent = e.consenso || at.status;
-  document.getElementById("prob").textContent = pct(at.P_lider);
-  document.getElementById("probtxt").textContent = `chance de vitória de ${at.lider}, segundo o modelo (máximo exibido: 99,5%)`;
+  const A = e.nomes.a, B = e.nomes.b, at = e.atual, sA = at.shareA, c = e.coleta || {};
+  // A. oficial
+  const ob = e.oficial && e.oficial.por_uf && e.oficial.por_uf.BR;
+  document.getElementById("ofbloco").innerHTML = ob && ob.share_a != null
+    ? `<div class="cand A num"><span>${A}</span><b>${pct(ob.share_a, 2)}</b></div>
+       <div class="cand B num"><span>${B}</span><b>${pct(1 - ob.share_a, 2)}</b></div>
+       <div class="barra"><div class="fa" style="width:${100 * ob.share_a}%"></div><div class="meio"></div></div>
+       <div class="linha num"><b>${br(ob.pst, 1)}%</b> das seções totalizadas${e.oficial.simulado ? " (simulado no ensaio)" : ""}</div>`
+    : `<div class="linha">Aguardando a contagem oficial do TSE.</div>`;
+  // B. projeção
+  document.getElementById("pa_n").textContent = A; document.getElementById("pb_n").textContent = B;
+  document.getElementById("pa_v").textContent = pct(sA, 2); document.getElementById("pb_v").textContent = pct(1 - sA, 2);
   document.getElementById("fa").style.width = (100 * sA) + "%";
   const ic = document.getElementById("ic");
-  ic.style.left = (100 * at.ic95[0]) + "%"; ic.style.width = (100 * (at.ic95[1] - at.ic95[0])) + "%";
-  document.getElementById("la").textContent = `${A} ${pct(sA, 2)}`;
-  document.getElementById("lb").textContent = `${pct(1 - sA, 2)} ${B}`;
-  document.getElementById("frase").textContent = at.frase;
-  const c = e.coleta;
-  document.getElementById("k1").textContent = pct(c.pct);
-  document.getElementById("k2").textContent = num(c.amostra_secoes ?? c.secoes_recebidas);
-  document.getElementById("k3").textContent = pct(c.contagem_bruta_A, 2);
-  document.getElementById("k3l").textContent = `contagem bruta da amostra (${A})`;
-  document.getElementById("k4").textContent = num(at.resto_votos);
+  ic.style.left = (100 * at.ic95[0]) + "%"; ic.style.width = Math.max(.3, 100 * (at.ic95[1] - at.ic95[0])) + "%";
+  document.getElementById("marg").textContent = `${sA >= .5 ? A : B} ${pp(Math.abs(2 * sA - 1))}`;
+  document.getElementById("margic").textContent = `${A} ${pp(2 * at.ic95[0] - 1)} a ${pp(2 * at.ic95[1] - 1)}`;
+  // C. situação
+  const cons = e.consenso || at.status, el = document.getElementById("situ");
+  el.textContent = cons.split(" (")[0];
+  el.className = "situ " + (cons.includes(A) && !cons.startsWith("Disputa") ? "A" : cons.includes(B) && !cons.startsWith("Disputa") ? "B" : "N");
+  const ms = e.metodos || [];
+  const nA = ms.filter(m => m.PA >= .5).length, n = ms.length;
+  document.getElementById("consmet").textContent = n ? (nA === n || nA === 0
+    ? `${n} de ${n} métodos com ${nA === n ? A : B} à frente` : `Métodos divergem: ${Math.max(nA, n - nA)} de ${n} com ${nA >= n - nA ? A : B} à frente`) : "";
+  document.getElementById("conf").textContent = `${at.lider} ${fmtP(at.P_lider)}`;
+  const pr = e.primeira_projecao;
+  document.getElementById("primeira").innerHTML = pr ? `Primeiro vencedor projetado: <b>${pr.lider}</b> às <b>${pr.hora}</b>, com ${br(100 * pr.pct, 1)}% das seções apuradas` : "";
+  // indicadores
+  document.getElementById("k_vant").textContent = `${at.lider} · ${votos(at.margem_votos)} de votos`;
+  document.getElementById("k_resto").textContent = votos(at.resto_votos);
+  const outro = at.lider === A ? B : A;
+  document.getElementById("k_virar").textContent = at.precisa_pct > 100 ? "mais de 100%" : br(at.precisa_pct, 1) + "%";
+  document.getElementById("k_virar_l").textContent = at.precisa_pct > 100
+    ? `dos votos restantes estimados seriam necessários para ${outro} virar`
+    : `dos votos restantes ${outro} precisaria (o modelo prevê ${br(at.prev_pct, 1)}%)`;
+  const tot = c.secoes_total || 0, proc = c.amostra_secoes ?? c.secoes_recebidas;
+  document.getElementById("k_cob").textContent = `${num(proc)}${tot ? " (" + pct(proc / tot, 1) + ")" : ""}`;
+  // técnico
   document.getElementById("regioes").innerHTML = Object.entries(c.por_regiao || {})
-    .map(([r, v]) => `<div class="reg"><span>${r}</span><span class="t"><i style="width:${100 * v}%"></i></span><em>${pct(v, 0)}</em></div>`).join("");
+    .map(([r, v]) => `<div class="reg"><span>${r}</span><span class="t"><i style="width:${100 * v}%"></i></span><em>${pct(v, 1)}</em></div>`).join("");
+  document.getElementById("tec").innerHTML = [
+    ["Modo", e.modo], ["Dados até", e.hora_dados], ["Projeção gerada em", new Date(e.atualizado).toLocaleTimeString("pt-BR")],
+    ["Seções apuradas (TSE)", pct(c.pct || 0, 1)], ["Seções processadas", num(proc)],
+    ["Votos nas seções processadas", c.votos_contados ? num(c.votos_contados) : "—"]]
+    .map(([k, v]) => `<span>${k}</span><b>${v}</b>`).join("");
   document.getElementById("aviso").textContent =
-    `${e.aviso || ""} Modo: ${e.modo}. Dados até ${e.hora_dados}. Atualizado em ${new Date(e.atualizado).toLocaleTimeString("pt-BR")}.`;
-  graficos(e);
-  estados(e);
-  metodos(e);
+    `${e.aviso || ""} Projeção de ${new Date(e.atualizado).toLocaleTimeString("pt-BR")} com dados até ${e.hora_dados}.`;
+  graficos(e); estados(e); metodos(e);
 }
 
-async function ciclo() {
-  const v = document.getElementById("vivo"), vt = document.getElementById("vivotxt");
-  try {
-    const r = await fetch(FONTE, { cache: "no-store" });   // sem "?t=": deixa a CDN da Vercel segurar o tráfego
-    const e = await r.json();
-    if (e && e.atualizado && e.atualizado !== ultimo) { ultimo = e.atualizado; render(e); }
-    const idade = e && e.atualizado ? (Date.now() - new Date(e.atualizado)) / 1000 : 1e9;
-    v.classList.toggle("parado", idade > 600);
-    vt.textContent = idade > 600 ? "sem atualização há mais de 10 min" : "ao vivo";
-  } catch (err) { v.classList.add("parado"); vt.textContent = "sem conexão com o servidor"; }
+function estadoAoVivo(e, erro) {
+  const v = document.getElementById("vivo"), vt = document.getElementById("vivotxt"), bn = document.getElementById("banner");
+  const idade = e && e.atualizado ? (Date.now() - new Date(e.atualizado)) / 1000 : null;
+  let cls = "", txt, ban = null;
+  if (!e && !erro) { v.className = "vivo atencao"; vt.textContent = "aguardando dados"; bn.hidden = true; return; }
+  if (erro || idade == null) { cls = "critico"; txt = "sem conexão"; ban = ["critico", "SEM CONEXÃO COM O SERVIDOR", "Os números abaixo são da última atualização recebida."]; }
+  else if (idade > 720) { cls = "critico"; txt = "atualização interrompida";
+    ban = ["critico", "ATUALIZAÇÃO INTERROMPIDA", `Última projeção válida: ${new Date(e.atualizado).toLocaleTimeString("pt-BR")}. A projeção está congelada.`]; }
+  else if (idade > 300) { cls = "atencao"; txt = `atraso de ${Math.round(idade / 60)} min`;
+    ban = ["atencao", "DADOS COM ATRASO", `Sem projeção nova há ${Math.round(idade / 60)} minutos. A projeção continua baseada na última coleta válida.`]; }
+  else { txt = `ao vivo · atualizado há ${idade < 60 ? Math.max(0, Math.round(idade)) + " s" : Math.round(idade / 60) + " min"}`; }
+  if (!ban && e && /ensaio/i.test(e.modo || "")) ban = ["ensaio", "ENSAIO", "Estes números são de um teste com dados de eleições passadas — não são da eleição de hoje."];
+  v.className = "vivo " + cls; vt.textContent = txt;
+  if (ban) { bn.hidden = false; bn.className = "banner " + ban[0]; bn.innerHTML = `${ban[1]}<span>${ban[2]}</span>`; } else bn.hidden = true;
 }
-ciclo(); setInterval(ciclo, INTERVALO);
+
+let ESTADO = null;
+async function ciclo() {
+  try {
+    const r = await fetch(FONTE, { cache: "no-store" });
+    const e = await r.json();
+    if (e && e.atualizado && e.atualizado !== ultimo) { ultimo = e.atualizado; ESTADO = e; render(e); }
+    estadoAoVivo(ESTADO || e, false);
+  } catch (err) { estadoAoVivo(ESTADO, true); }
+}
+// só consulta com a aba VISÍVEL (aba em segundo plano não gasta cota); ao voltar para a aba, atualiza na hora
+ciclo();
+setInterval(() => { if (!document.hidden) ciclo(); }, INTERVALO);
+setInterval(() => estadoAoVivo(ESTADO, false), 5000);       // o relógio "atualizado há X s" anda sozinho
+document.addEventListener("visibilitychange", () => { if (!document.hidden) ciclo(); });
 </script>
 </body>
 </html>
