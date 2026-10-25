@@ -221,17 +221,6 @@
           <span id="mmleg">· cor mais forte = margem maior · mais transparente = menos seções apuradas</span><s style="background:var(--line)"></s><span>sem dados</span></div>
       </section>
 
-      <!-- SOBRE / AUTORIA -->
-      <section class="card s12" id="sobre"><div class="sobre">
-        <div>
-          <h2>Quem fez</h2>
-          <div class="quem"><div class="av" id="av"></div><div><b id="a_nome"></b><p id="a_bio"></p></div></div>
-          <div class="links" id="a_links"></div>
-          <p style="margin-top:12px">Projeto pessoal e independente, sem vínculo com partidos, campanhas, veículos ou com o TSE. O código e os testes estão abertos para quem quiser conferir.</p>
-        </div>
-        <div> <h2>Como esta projeção é feita</h2> <p> A contagem parcial nem sempre representa o país. As urnas chegam em ritmos diferentes, e algumas regiões ou perfis de eleitor podem aparecer antes de outros. Para reduzir essa distorção, o painel analisa cada seção eleitoral, compara seu comportamento com o 1º turno e estima o resultado das seções ainda pendentes. </p> <ul class="fatos"> <li> <b>Dados coletados diretamente do TSE</b> Quatro máquinas em redes independentes coletam os boletins de urna, respeitando os limites de acesso. </li> <li> <b>Boletins processados na fonte</b> O sistema lê diretamente o arquivo oficial do boletim de urna em ASN.1. O decodificador foi validado contra os resultados publicados pelo TSE. </li> <li> <b>Validação histórica</b> O modelo foi submetido a replays das apurações de 2018 e 2022, reproduzidas minuto a minuto: <span id="a_backtest"></span> </li> <li> <b>Anúncio com critérios mínimos</b> O painel combina três métodos e só declara um vencedor quando existe consenso, confiança estatística e cobertura suficiente da apuração nacional e regional. </li> </ul> </div>
-      </div></section>
-
       <section class="card s12">
         <details>
           <summary>Qualidade dos dados e detalhes técnicos</summary>
@@ -255,6 +244,18 @@
             e por estimador de razão estratificado). A incerteza é estimada por simulação, com erros que podem ser comuns a um
             município, a um estado ou ao país inteiro. O método foi testado reproduzindo as apurações de 2022 e 2018.</p>
         </details>
+        <!-- SOBRE / AUTORIA (fechado por padrão; o "por Fulano" do topo abre) -->
+        <details id="sobre">
+          <summary>Quem fez este painel</summary>
+          <div class="sobre" style="margin-top:12px">
+        <div>
+          <div class="quem"><div class="av" id="av"></div><div><b id="a_nome"></b><p id="a_bio"></p></div></div>
+          <div class="links" id="a_links"></div>
+          <p style="margin-top:12px">Projeto pessoal e independente, sem vínculo com partidos, campanhas, veículos ou com o TSE. O código e os testes estão abertos para quem quiser conferir.</p>
+        </div>
+        <div> <h2>Como esta projeção é feita</h2> <p> A contagem parcial nem sempre representa o país. As urnas chegam em ritmos diferentes, e algumas regiões ou perfis de eleitor podem aparecer antes de outros. Para reduzir essa distorção, o painel analisa cada seção eleitoral, compara seu comportamento com o 1º turno e estima o resultado das seções ainda pendentes. </p> <ul class="fatos"> <li> <b>Dados coletados diretamente do TSE</b> Quatro máquinas em redes independentes coletam os boletins de urna, respeitando os limites de acesso. </li> <li> <b>Boletins processados na fonte</b> O sistema lê diretamente o arquivo oficial do boletim de urna em ASN.1. O decodificador foi validado contra os resultados publicados pelo TSE. </li> <li> <b>Validação histórica</b> O modelo foi submetido a replays das apurações de 2018 e 2022, reproduzidas minuto a minuto: <span id="a_backtest"></span> </li> <li> <b>Anúncio com critérios mínimos</b> O painel combina três métodos e só declara um vencedor quando existe consenso, confiança estatística e cobertura suficiente da apuração nacional e regional. </li> </ul> </div>
+      </div>
+        </details>
       </section>
     </div>
     <footer id="aviso"></footer>
@@ -275,6 +276,9 @@ const AUTOR = {
 function autoria() {
   const a = AUTOR, ini = a.nome.split(/\s+/).filter(Boolean).map(p => p[0]).slice(0, 2).join("").toUpperCase();
   document.getElementById("byline").innerHTML = a.nome ? `por <a href="#sobre">${a.nome}</a>` : "";
+  const lk = document.querySelector("#byline a");
+  if (lk) lk.onclick = ev => { ev.preventDefault(); const d = document.getElementById("sobre"); d.open = true;
+    d.scrollIntoView({ behavior: "smooth", block: "start" }); };
   document.getElementById("sobre").hidden = !a.nome;
   document.getElementById("a_nome").textContent = a.nome;
   document.getElementById("a_bio").textContent = a.bio;
@@ -528,7 +532,9 @@ function estadoAoVivo(e, erro) {
 const UFS_NOME = {AC:"Acre",AL:"Alagoas",AM:"Amazonas",AP:"Amapá",BA:"Bahia",CE:"Ceará",DF:"Distrito Federal",ES:"Espírito Santo",GO:"Goiás",
   MA:"Maranhão",MG:"Minas Gerais",MS:"Mato Grosso do Sul",MT:"Mato Grosso",PA:"Pará",PB:"Paraíba",PE:"Pernambuco",PI:"Piauí",PR:"Paraná",
   RJ:"Rio de Janeiro",RN:"Rio Grande do Norte",RO:"Rondônia",RR:"Roraima",RS:"Rio Grande do Sul",SC:"Santa Catarina",SE:"Sergipe",SP:"São Paulo",TO:"Tocantins"};
-const FONTE_MUN = FONTE.endsWith(".json") ? FONTE.replace(/\.json$/, "") + (FONTE === "estado.json" ? "" : "_") + "municipios.json" : "/api/estado?k=mun";
+// Cloudflare: estado.json -> municipios.json | teste local: x.json -> x_municipios.json | Vercel: /api/estado?k=mun
+const FONTE_MUN = /(^|\/)estado\.json$/.test(FONTE) ? FONTE.replace(/estado\.json$/, "municipios.json")
+  : FONTE.endsWith(".json") ? FONTE.replace(/\.json$/, "_municipios.json") : "/api/estado?k=mun";
 let MM = { svg: null, dados: null, modo: "cont", uf: "", vb: null, pedido: 0, carregando: false };
 function mmCarregar() {
   if (MM.carregando || MM.svg) return; MM.carregando = true;
