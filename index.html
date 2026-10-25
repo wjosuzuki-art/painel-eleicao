@@ -202,16 +202,7 @@
           <div class="links" id="a_links"></div>
           <p style="margin-top:12px">Projeto pessoal e independente, sem vínculo com partidos, campanhas, veículos ou com o TSE. O código e os testes estão abertos para quem quiser conferir.</p>
         </div>
-        <div>
-          <h2>Bastidores</h2>
-          <p>Uma noite de apuração tem um problema de amostragem embutido: as urnas não chegam em ordem aleatória. Capitais, regiões e perfis de eleitor aparecem em ritmos diferentes, e a contagem parcial engana. Este painel corrige isso seção por seção.</p>
-          <ul class="fatos">
-            <li><b>Coleta própria</b>Três máquinas em redes diferentes baixam os boletins de urna direto do TSE, respeitando os limites de acesso.</li>
-            <li><b>Decodificador do BU</b>O arquivo binário oficial (ASN.1) é lido diretamente; conferido 100% contra os totais publicados pelo TSE no 1º turno.</li>
-            <li><b>Testado no passado</b>Reproduzi as apurações de 2022 e 2018 minuto a minuto: <span id="a_backtest"></span></li>
-            <li><b>Cético por padrão</b>Três métodos com hipóteses diferentes, incerteza por simulação e trava de apuração mínima antes de qualquer anúncio.</li>
-          </ul>
-        </div>
+        <div> <h2>Como esta projeção é feita</h2> <p> A contagem parcial nem sempre representa o país. As urnas chegam em ritmos diferentes, e algumas regiões ou perfis de eleitor podem aparecer antes de outros. Para reduzir essa distorção, o painel analisa cada seção eleitoral, compara seu comportamento com o 1º turno e estima o resultado das seções ainda pendentes. </p> <ul class="fatos"> <li> <b>Dados coletados diretamente do TSE</b> Quatro máquinas em redes independentes coletam os boletins de urna, respeitando os limites de acesso. </li> <li> <b>Boletins processados na fonte</b> O sistema lê diretamente o arquivo oficial do boletim de urna em ASN.1. O decodificador foi validado contra os resultados publicados pelo TSE. </li> <li> <b>Validação histórica</b> O modelo foi submetido a replays das apurações de 2018 e 2022, reproduzidas minuto a minuto: <span id="a_backtest"></span> </li> <li> <b>Anúncio com critérios mínimos</b> O painel combina três métodos e só declara um vencedor quando existe consenso, confiança estatística e cobertura suficiente da apuração nacional e regional. </li> </ul> </div>
       </div></section>
 
       <section class="card s12">
