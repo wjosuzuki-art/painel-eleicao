@@ -161,17 +161,20 @@ function estados(e) {
   document.getElementById("oficialbr").textContent = br && br.share_a != null
     ? `Contagem oficial do TSE: ${pct(br.pst / 100)} das seções apuradas · ${A} ${pct(br.share_a, 2)} × ${pct(1 - br.share_a, 2)} ${B}` : "";
   const temOf = Object.keys(of).some(u => u !== "BR");
-  document.getElementById("mapat").textContent = temOf ? "Contagem oficial por estado" : "Contagem oficial por estado (aguardando dados do TSE)";
+  document.getElementById("mapat").textContent = temOf ? "Contagem oficial por estado"
+    : "Projeção do modelo por estado (contagem oficial do TSE ainda não disponível)";
   if (GEO) {
     const W = 420, H = 400, x0 = -74.2, x1 = -28.6, y0 = 5.6, y1 = -34;
     const px = ([lo, la]) => [((lo - x0) / (x1 - x0) * W).toFixed(1), ((la - y0) / (y1 - y0) * H).toFixed(1)];
     const anel = r => "M" + r.map(px).map(p => p.join(",")).join("L") + "Z";
     const d = g => g.type === "Polygon" ? g.coordinates.map(anel).join("") : g.coordinates.map(p => p.map(anel).join("")).join("");
     document.getElementById("mapa").innerHTML = `<svg viewBox="0 0 ${W} ${H}">` + GEO.features.map(f => {
-      const u = f.properties.uf, o = of[u] || {}, op = o.pst == null ? .25 : .25 + .75 * Math.min(1, o.pst / 100);
+      const u = f.properties.uf, o = of[u] || {},
+            op = temOf ? (o.pst == null ? .25 : .25 + .75 * Math.min(1, o.pst / 100)) : .6,
+            cshare = temOf ? o.share_a : pj[u];
       const tip = `${f.properties.nome}: ${o.pst != null ? pct(o.pst / 100) + " apurado" : "sem dados"}` +
         (o.share_a != null ? ` · ${A} ${pct(o.share_a, 1)}` : "") + (pj[u] != null ? ` · projeção ${pct(pj[u], 1)}` : "");
-      return `<path d="${d(f.geometry)}" fill="${cor(o.share_a)}" fill-opacity="${op}"><title>${tip}</title></path>`;
+      return `<path d="${d(f.geometry)}" fill="${cor(cshare)}" fill-opacity="${op}"><title>${tip}</title></path>`;
     }).join("") + "</svg>";
   }
   const ufs = Object.keys(Object.assign({}, of, pj)).filter(u => u !== "BR").sort();
