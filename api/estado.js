@@ -9,7 +9,8 @@
 
 const URL_ = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
 const TOK = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-const CHAVE = "painel:estado";
+// ?k=mun -> dados por município (arquivo maior, baixado só por quem abre o mapa por município)
+const chave = req => (req.query && req.query.k === "mun" ? "painel:mun" : "painel:estado");
 
 async function redis(caminho, corpo) {
   const r = await fetch(`${URL_}/${caminho}`, {
@@ -25,9 +26,12 @@ export default async function handler(req, res) {
   if (!URL_ || !TOK) return res.status(500).json({ erro: "Redis não configurado (veja as variáveis de ambiente)" });
   try {
     if (req.method === "GET") {
+      const CHAVE = chave(req);
       const { result } = await redis(`get/${CHAVE}`);
       // cache na CDN da Vercel por 15 s: com 10 ou 10 mil pessoas olhando, o Redis recebe ~4 leituras por minuto
-      res.setHeader("Cache-Control", "public, max-age=0, s-maxage=15, stale-while-revalidate=30");
+      res.setHeader("Cache-Control", CHAVE === "painel:mun"
+        ? "public, max-age=0, s-maxage=60, stale-while-revalidate=120"
+        : "public, max-age=0, s-maxage=15, stale-while-revalidate=30");
       return res.status(200).send(result || "{}");
     }
     if (req.method === "POST") {
@@ -36,7 +40,7 @@ export default async function handler(req, res) {
         return res.status(401).json({ erro: "não autorizado" });
       const corpo = typeof req.body === "string" ? req.body : JSON.stringify(req.body);
       if (corpo.length > 900_000) return res.status(413).json({ erro: "estado grande demais" });
-      await redis(`set/${CHAVE}`, corpo);
+      await redis(`set/${chave(req)}`, corpo);
       return res.status(200).json({ ok: true, bytes: corpo.length });
     }
     return res.status(405).json({ erro: "use GET ou POST" });
