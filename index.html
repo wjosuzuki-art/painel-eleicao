@@ -159,7 +159,7 @@ function estados(e) {
   document.getElementById("lega").textContent = A; document.getElementById("legb").textContent = B;
   const br = of.BR;
   document.getElementById("oficialbr").textContent = br && br.share_a != null
-    ? `Contagem oficial do TSE: ${pct(br.pst / 100)} das seções apuradas · ${A} ${pct(br.share_a, 2)} × ${pct(1 - br.share_a, 2)} ${B}` : "";
+    ? `Contagem oficial do TSE${e.oficial.simulado ? " (simulada no ensaio)" : ""}: ${pct(br.pst / 100)} das seções apuradas · ${A} ${pct(br.share_a, 2)} × ${pct(1 - br.share_a, 2)} ${B}` : "";
   const temOf = Object.keys(of).some(u => u !== "BR");
   document.getElementById("mapat").textContent = temOf ? "Contagem oficial por estado"
     : "Projeção do modelo por estado (contagem oficial do TSE ainda não disponível)";
